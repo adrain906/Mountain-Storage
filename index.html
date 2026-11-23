@@ -44,10 +44,6 @@
           class="px-3.5 py-2 rounded-xl bg-[#1b4332] hover:bg-[#2d6a4f] text-white text-xs sm:text-sm font-semibold shadow-sm transition cursor-pointer flex items-center gap-1.5">
           <span>＋</span> 新增完登紀錄
         </button>
-        <button type="button" id="btnOpenCloudModal"
-          class="px-3 py-2 rounded-xl bg-white hover:bg-zinc-50 text-[#1b4332] border border-emerald-300 text-xs font-semibold transition cursor-pointer flex items-center gap-1">
-          <span>☁️</span> 多人同步設定
-        </button>
         <button type="button" id="btnExportCsv"
           class="px-3 py-2 rounded-xl bg-white hover:bg-zinc-50 text-zinc-700 border border-zinc-200 text-xs font-semibold transition cursor-pointer">
           匯出 CSV
@@ -63,62 +59,6 @@
       </div>
     </div>
   </header>
-
-  <!-- 多人雲端即時同步設定視窗 -->
-  <div id="cloudModal" class="hidden fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] flex flex-col shadow-2xl overflow-hidden border border-zinc-200">
-      <div class="px-5 py-4 border-b border-zinc-200 bg-zinc-50/70 flex items-start justify-between">
-        <div>
-          <h3 class="text-base sm:text-lg font-bold text-zinc-900">多人即時雲端同步設定</h3>
-          <p class="text-xs text-zinc-500 mt-0.5">讓所有開啟連結的夥伴即時看到彼此的新增與修改</p>
-        </div>
-        <button type="button" id="btnCloseCloudModal"
-          class="px-2.5 py-1 rounded-lg bg-white border border-zinc-200 text-zinc-500 hover:text-zinc-900 text-xs font-bold cursor-pointer">
-          ✕
-        </button>
-      </div>
-
-      <div class="p-5 overflow-y-auto space-y-4 text-xs">
-        <div class="bg-[#f4f7f5] border border-[#e2e8e4] rounded-xl p-3.5 text-zinc-700 space-y-1.5">
-          <div class="font-bold text-[#1b4332]">如何啟用「對方也看得到即時變更」？</div>
-          <div>1. 前往 <span class="font-mono bg-white px-1.5 py-0.5 rounded border border-zinc-200">console.firebase.google.com</span> 建立免費專案，啟用 <strong>Anonymous（匿名登入）</strong> 與 <strong>Firestore Database</strong>。</div>
-          <div>2. 將專案設定 JSON 貼到下方輸入框並儲存，此瀏覽器會記住設定並立即連線同步；若要固定寫死在網頁檔內給所有人免填直接同步，可將相同 JSON 貼入程式碼 <span class="font-mono bg-white px-1 py-0.5 rounded">CUSTOM_FIREBASE_CONFIG</span>。</div>
-        </div>
-
-        <div>
-          <label for="cloudRoomInput" class="block font-semibold text-zinc-700 mb-1">共用資料表代碼（同代碼成員會看到同一份資料）</label>
-          <input type="text" id="cloudRoomInput" placeholder="例如：tw-100-peaks-team"
-            class="w-full px-3 py-2 text-xs font-mono bg-zinc-50 border border-zinc-300 rounded-xl focus:bg-white focus:outline-none focus:border-[#1b4332]" />
-        </div>
-
-        <div>
-          <label for="cloudConfigInput" class="block font-semibold text-zinc-700 mb-1">Firebase 設定（支援貼上 JSON 物件或整段設定文字）</label>
-          <textarea id="cloudConfigInput" rows="6"
-            placeholder='例如：{"apiKey":"...","authDomain":"...","projectId":"...","storageBucket":"...","messagingSenderId":"...","appId":"..."}'
-            class="w-full px-3 py-2 text-xs font-mono bg-zinc-50 border border-zinc-300 rounded-xl focus:bg-white focus:outline-none focus:border-[#1b4332]"></textarea>
-        </div>
-
-        <div id="cloudFeedbackText" class="text-xs text-zinc-500"></div>
-      </div>
-
-      <div class="px-5 py-3.5 border-t border-zinc-200 bg-zinc-50 flex items-center justify-between">
-        <button type="button" id="btnResetCloudConfig"
-          class="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-rose-600 hover:bg-rose-50 cursor-pointer">
-          清除雲端設定
-        </button>
-        <div class="flex gap-2">
-          <button type="button" id="btnCancelCloudModal"
-            class="px-3.5 py-2 rounded-xl bg-white border border-zinc-200 text-xs sm:text-sm font-semibold text-zinc-600 hover:bg-zinc-100 cursor-pointer">
-            取消
-          </button>
-          <button type="button" id="btnSaveCloudConfig"
-            class="px-4 py-2 rounded-xl bg-[#1b4332] hover:bg-[#2d6a4f] text-xs sm:text-sm font-semibold text-white cursor-pointer">
-            儲存並啟用即時同步
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
 
   <!-- 提示訊息條 -->
   <div id="toastBanner" class="hidden fixed bottom-5 right-5 z-50 bg-zinc-900 text-white text-xs font-medium px-4 py-3 rounded-xl shadow-xl"></div>
@@ -417,18 +357,18 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-    import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
     import { getFirestore, doc, setDoc, deleteDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-    // =========================================================================
-    // 【GitHub Pages 外部多人即時同步設定區】
-    // 若您將此檔案上傳至 GitHub Pages 並希望所有訪客共用同一份雲端即時資料：
-    // 1. 前往 https://console.firebase.google.com/ 建立免費專案
-    // 2. 啟用 Authentication (匿名登入) 與 Firestore Database (測試模式)
-    // 3. 將專案的 firebaseConfig 貼到下方 CUSTOM_FIREBASE_CONFIG 物件中即可！
-    // 若留空 (null)，網頁會自動使用瀏覽器本機儲存 (localStorage)，確保外部訪客皆可正常查詢與使用。
-    // =========================================================================
-    const CUSTOM_FIREBASE_CONFIG = null;
+    // 已寫入您的 Firebase 專案設定（taiwan-peaks-log），山友開啟即自動即時同步
+    const CUSTOM_FIREBASE_CONFIG = {
+      apiKey: "AIzaSyAvbk83eDlCDPImb3aHMOunFWAi4m9ROQs",
+      authDomain: "taiwan-peaks-log.firebaseapp.com",
+      projectId: "taiwan-peaks-log",
+      storageBucket: "taiwan-peaks-log.firebasestorage.app",
+      messagingSenderId: "1005741922227",
+      appId: "1:1005741922227:web:937d6d393212331634ddc6"
+    };
 
     // 完整 100 座台灣小百岳資料庫
     const PEAKS_DB = [
@@ -535,8 +475,6 @@
     ];
 
     const LOCAL_STORAGE_KEY = "tw_100_small_peaks_records_v2";
-    const CLOUD_CONFIG_STORAGE_KEY = "tw_100_small_peaks_cloud_cfg_v1";
-    const CLOUD_ROOM_STORAGE_KEY = "tw_100_small_peaks_cloud_room_v1";
     let userRecords = {};
     let db = null;
     let auth = null;
@@ -545,56 +483,8 @@
     let unsubscribeSnapshot = null;
     let memoryFallbackRecords = {};
 
-    const appId = typeof __app_id !== "undefined" ? __app_id : "tw-100-peaks-github";
-    let activeCollectionName = "taiwan_100_small_peaks_shared";
-
-    function loadSavedCloudOverride() {
-      let savedRoom = "";
-      let savedCfg = null;
-      try {
-        savedRoom = (window.localStorage.getItem(CLOUD_ROOM_STORAGE_KEY) || "").trim();
-        const rawCfg = window.localStorage.getItem(CLOUD_CONFIG_STORAGE_KEY);
-        if (rawCfg) {
-          savedCfg = JSON.parse(rawCfg);
-        }
-      } catch (e) {
-        // Ignore storage read error
-      }
-      return { savedRoom, savedCfg };
-    }
-
-    function parseFirebaseConfigText(rawText) {
-      if (!rawText || !rawText.trim()) return null;
-      const trimmed = rawText.trim();
-      try {
-        return JSON.parse(trimmed);
-      } catch (e) {
-        const objMatch = trimmed.match(/\{[\s\S]*\}/);
-        if (!objMatch) return null;
-        const normalized = objMatch[0]
-          .replace(/(\w+)\s*:/g, '"$1":')
-          .replace(/'/g, '"')
-          .replace(/,\s*}/g, "}");
-        return JSON.parse(normalized);
-      }
-    }
-
-    function openCloudModal() {
-      const { savedRoom, savedCfg } = loadSavedCloudOverride();
-      document.getElementById("cloudRoomInput").value = savedRoom || "taiwan_100_small_peaks_shared";
-      const displayCfg = savedCfg || CUSTOM_FIREBASE_CONFIG;
-      document.getElementById("cloudConfigInput").value = displayCfg ? JSON.stringify(displayCfg, null, 2) : "";
-      document.getElementById("cloudFeedbackText").textContent = isCloudActive
-        ? `目前狀態：已連線至「${activeCollectionName}」即時同步中`
-        : "目前狀態：尚未設定自訂 Firebase，使用本機快取模式";
-      document.getElementById("cloudModal").classList.remove("hidden");
-      document.getElementById("cloudModal").classList.add("flex");
-    }
-
-    function closeCloudModal() {
-      document.getElementById("cloudModal").classList.add("hidden");
-      document.getElementById("cloudModal").classList.remove("flex");
-    }
+    const appId = "tw-100-peaks-github";
+    const activeCollectionName = "taiwan_100_small_peaks_shared";
 
     function loadLocalRecords() {
       try {
@@ -602,13 +492,13 @@
         if (raw) {
           const parsed = JSON.parse(raw);
           if (parsed && typeof parsed === "object") {
-            memoryFallbackRecords = { ...parsed };
             userRecords = { ...parsed };
+            memoryFallbackRecords = { ...parsed };
             return;
           }
         }
       } catch (e) {
-        console.warn("讀取本機快取失敗，改用記憶體快取:", e);
+        console.warn("讀取本機紀錄失敗，改用記憶體快取:", e);
       }
       userRecords = { ...memoryFallbackRecords };
     }
@@ -618,328 +508,196 @@
       try {
         window.localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(userRecords));
       } catch (e) {
-        console.warn("儲存本機快取失敗，已保留於目前工作階段:", e);
+        console.warn("寫入本機紀錄失敗:", e);
       }
     }
 
-    function showToast(msg) {
-      const el = document.getElementById("toastBanner");
-      if (!el) return;
-      el.textContent = msg;
-      el.classList.remove("hidden");
-      clearTimeout(el._timer);
-      el._timer = setTimeout(() => {
-        el.classList.add("hidden");
-      }, 3000);
+    function showToast(message) {
+      const banner = document.getElementById("toastBanner");
+      if (!banner) return;
+      banner.textContent = message;
+      banner.classList.remove("hidden");
+      clearTimeout(showToast._timer);
+      showToast._timer = setTimeout(() => {
+        banner.classList.add("hidden");
+      }, 2800);
     }
 
-    function updateSyncStatus(state, detailText) {
+    function setSyncBadge(mode, text, subHint) {
       const badge = document.getElementById("syncStatusBadge");
-      const subHint = document.getElementById("syncSubHint");
+      const hint = document.getElementById("syncSubHint");
+      if (hint && subHint) {
+        hint.textContent = subHint;
+      }
       if (!badge) return;
-      if (state === "live") {
-        badge.className = "inline-flex items-center gap-1.5 px-2.5 py-0.5 text-[11px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-full";
-        badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>${detailText || "多人雲端即時同步中"}`;
-        if (subHint) subHint.textContent = "多人共用雲端模式：他人亦可即時查詢與編輯同步";
-      } else if (state === "saving") {
-        badge.className = "inline-flex items-center gap-1.5 px-2.5 py-0.5 text-[11px] font-semibold bg-sky-50 text-sky-800 border border-sky-200 rounded-full";
-        badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-sky-500 animate-ping"></span>${detailText || "儲存中..."}`;
-      } else {
-        badge.className = "inline-flex items-center gap-1.5 px-2.5 py-0.5 text-[11px] font-semibold bg-amber-50 text-amber-800 border border-amber-200 rounded-full";
-        badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>${detailText || "本機瀏覽器模式"}`;
-        if (subHint) subHint.textContent = "本機儲存模式：資料存於目前瀏覽器（若需多人共用請設定 Firebase）";
-      }
+      const dotColor = mode === "cloud" ? "bg-emerald-600" : "bg-amber-500";
+      const cls = mode === "cloud"
+        ? "inline-flex items-center gap-1.5 px-2.5 py-0.5 text-[11px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-full"
+        : "inline-flex items-center gap-1.5 px-2.5 py-0.5 text-[11px] font-semibold bg-amber-50 text-amber-800 border border-amber-200 rounded-full";
+      badge.className = cls;
+      badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full ${dotColor}"></span>${escapeHtml(text)}`;
     }
 
-    async function initDataLayer() {
-      loadLocalRecords();
-      renderAll();
-
-      if (typeof unsubscribeSnapshot === "function") {
-        unsubscribeSnapshot();
-        unsubscribeSnapshot = null;
-      }
-
-      const { savedRoom, savedCfg } = loadSavedCloudOverride();
-      activeCollectionName = (savedRoom || "taiwan_100_small_peaks_shared").replace(/[^a-zA-Z0-9_-]/g, "_");
-
-      let activeConfig = null;
-      if (savedCfg && typeof savedCfg === "object" && savedCfg.apiKey && savedCfg.projectId) {
-        activeConfig = savedCfg;
-      } else if (typeof __firebase_config !== "undefined" && __firebase_config) {
-        activeConfig = typeof __firebase_config === "string"
-          ? JSON.parse(__firebase_config)
-          : __firebase_config;
-      } else if (CUSTOM_FIREBASE_CONFIG && typeof CUSTOM_FIREBASE_CONFIG === "object" && CUSTOM_FIREBASE_CONFIG.apiKey) {
-        activeConfig = CUSTOM_FIREBASE_CONFIG;
-      }
-
-      if (!activeConfig) {
-        isCloudActive = false;
-        updateSyncStatus("local", "即時查詢與本機儲存就緒");
-        return;
-      }
-
-      try {
-        const app = initializeApp(activeConfig, "peaks_sync_app");
-        auth = getAuth(app);
-        db = getFirestore(app);
-
-        if (typeof __initial_auth_token !== "undefined" && __initial_auth_token) {
-          await signInWithCustomToken(auth, __initial_auth_token);
-        } else {
-          await signInAnonymously(auth);
-        }
-
-        currentUser = auth.currentUser;
-        if (!currentUser) {
-          isCloudActive = false;
-          updateSyncStatus("local", "即時查詢與本機儲存就緒");
-          return;
-        }
-
-        isCloudActive = true;
-        const sharedColRef = collection(db, "artifacts", appId, "public", "data", activeCollectionName);
-        unsubscribeSnapshot = onSnapshot(
-          sharedColRef,
-          (snapshot) => {
-            const nextRecords = {};
-            snapshot.forEach((docSnap) => {
-              const data = docSnap.data();
-              const peakId = Number(docSnap.id);
-              if (!isNaN(peakId) && data) {
-                nextRecords[peakId] = {
-                  status: data.status === "已完登" ? "已完登" : "未完成",
-                  date: data.date || "",
-                  startTime: data.startTime || "",
-                  endTime: data.endTime || "",
-                  participants: data.participants || "",
-                  transport: data.transport || "",
-                  memo: data.memo || ""
-                };
-              }
-            });
-            userRecords = nextRecords;
-            saveLocalRecords();
-            updateSyncStatus("live", "多人即時雲端同步中");
-            renderAll();
-          },
-          (error) => {
-            console.warn("雲端監聽切換為本機模式:", error);
-            isCloudActive = false;
-            updateSyncStatus("local", "即時查詢與本機儲存就緒");
-          }
-        );
-      } catch (err) {
-        console.warn("雲端初始化未啟用，使用本機儲存模式:", err);
-        isCloudActive = false;
-        updateSyncStatus("local", "即時查詢與本機儲存就緒");
-      }
-    }
-
-    async function saveRecord(peakId, recordObj) {
-      userRecords[peakId] = recordObj;
-      saveLocalRecords();
-      renderAll();
-
-      if (!isCloudActive || !db || !currentUser) {
-        updateSyncStatus("local", "已存至本機");
-        return;
-      }
-
-      try {
-        updateSyncStatus("saving", "正在存到雲端...");
-        const docRef = doc(db, "artifacts", appId, "public", "data", activeCollectionName, String(peakId));
-        await setDoc(docRef, {
-          ...recordObj,
-          updatedBy: currentUser.uid,
-          updatedAt: new Date().toISOString()
-        });
-        updateSyncStatus("live", "已存到雲端並同步");
-      } catch (err) {
-        console.error("雲端寫入失敗:", err);
-        updateSyncStatus("local", "雲端寫入失敗，已存本機");
-      }
-    }
-
-    async function deleteRecord(peakId) {
-      delete userRecords[peakId];
-      saveLocalRecords();
-      renderAll();
-
-      if (!isCloudActive || !db || !currentUser) {
-        updateSyncStatus("local", "已更新本機紀錄");
-        return;
-      }
-
-      try {
-        updateSyncStatus("saving", "正在同步清除雲端紀錄...");
-        const docRef = doc(db, "artifacts", appId, "public", "data", activeCollectionName, String(peakId));
-        await deleteDoc(docRef);
-        updateSyncStatus("live", "已存到雲端並同步");
-      } catch (err) {
-        console.error("雲端刪除失敗:", err);
-        updateSyncStatus("local", "雲端同步失敗，已更新本機");
-      }
-    }
-
-    function pad2(n) {
-      return n < 10 ? "0" + n : String(n);
-    }
-
-    function buildTimeOptions() {
-      let html = '<option value="">-- 選擇時間 --</option>';
-      for (let h = 0; h < 24; h++) {
-        for (const m of [0, 15, 30, 45]) {
-          const val = `${pad2(h)}:${pad2(m)}`;
-          html += `<option value="${val}">${val}</option>`;
-        }
-      }
-      document.getElementById("mStart").innerHTML = html;
-      document.getElementById("mEnd").innerHTML = html;
-    }
-
-    function buildPeakDropdown() {
-      let html = "";
-      for (const p of PEAKS_DB) {
-        const st = userRecords[p.id] ? userRecords[p.id].status : "";
-        const suffix = st === "已完登" ? " [已完登]" : "";
-        html += `<option value="${p.id}">${p.code} ${p.name} (${p.county} • ${p.elev}m)${suffix}</option>`;
-      }
-      document.getElementById("mPeakSelect").innerHTML = html;
-    }
-
-    function calcHours(startStr, endStr) {
-      if (!startStr || !endStr) return null;
-      const [sh, sm] = startStr.split(":").map(Number);
-      const [eh, em] = endStr.split(":").map(Number);
-      let sMins = sh * 60 + sm;
-      let eMins = eh * 60 + em;
-      if (eMins < sMins) eMins += 24 * 60;
-      return Math.round(((eMins - sMins) / 60) * 100) / 100;
-    }
-
-    function countPeople(str) {
-      if (!str || !str.trim()) return 0;
-      return str.trim().split(/[、,，;；\s]+/).filter(Boolean).length;
-    }
-
-    function escapeHtml(text) {
-      if (!text) return "";
-      return String(text)
+    function escapeHtml(value) {
+      return String(value ?? "")
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
         .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;");
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
     }
 
-    function getDiffBadge(diff) {
-      const map = {
+    function calcDurationHours(startStr, endStr) {
+      if (!startStr || !endStr) return null;
+      const [sh, sm] = startStr.split(":").map(Number);
+      const [eh, em] = endStr.split(":").map(Number);
+      if ([sh, sm, eh, em].some(Number.isNaN)) return null;
+      let startMins = sh * 60 + sm;
+      let endMins = eh * 60 + em;
+      if (endMins < startMins) endMins += 24 * 60;
+      return Math.round(((endMins - startMins) / 60) * 100) / 100;
+    }
+
+    function countParticipants(rawStr) {
+      if (!rawStr || !rawStr.trim()) return 0;
+      return rawStr
+        .split(/[、,，;；\s]+/)
+        .map(item => item.trim())
+        .filter(Boolean).length;
+    }
+
+    function hasMeaningfulRecord(rec) {
+      if (!rec || typeof rec !== "object") return false;
+      return Boolean(
+        rec.status === "已完登" ||
+        (rec.date && rec.date.trim()) ||
+        (rec.startTime && rec.startTime.trim()) ||
+        (rec.endTime && rec.endTime.trim()) ||
+        (rec.participants && rec.participants.trim()) ||
+        (rec.transport && rec.transport.trim()) ||
+        (rec.memo && rec.memo.trim())
+      );
+    }
+
+    function buildTimeSelectOptions() {
+      const startSel = document.getElementById("mStart");
+      const endSel = document.getElementById("mEnd");
+      let optionsHtml = '<option value="">-- 選擇時間 --</option>';
+      for (let h = 0; h < 24; h++) {
+        for (const m of [0, 15, 30, 45]) {
+          const hh = String(h).padStart(2, "0");
+          const mm = String(m).padStart(2, "0");
+          const val = `${hh}:${mm}`;
+          optionsHtml += `<option value="${val}">${val}</option>`;
+        }
+      }
+      startSel.innerHTML = optionsHtml;
+      endSel.innerHTML = optionsHtml;
+    }
+
+    function buildPeakDropdownOptions() {
+      const selectEl = document.getElementById("mPeakSelect");
+      selectEl.innerHTML = PEAKS_DB.map(peak => {
+        const st = userRecords[peak.id]?.status === "已完登" ? " [已完登]" : "";
+        return `<option value="${peak.id}">${peak.code} ${peak.name} (${peak.county} • ${peak.elev}m)${st}</option>`;
+      }).join("");
+    }
+
+    function getDiffBadgeHtml(diff) {
+      const colorMap = {
         "低": "bg-emerald-100 text-emerald-800",
         "低至中": "bg-sky-100 text-sky-800",
         "中": "bg-amber-100 text-amber-800",
         "中至高": "bg-orange-100 text-orange-800",
         "高": "bg-rose-100 text-rose-800"
       };
-      return `<span class="inline-block px-2 py-0.5 rounded-md text-[11px] font-semibold whitespace-nowrap ${map[diff] || "bg-zinc-100 text-zinc-700"}">${escapeHtml(diff)}</span>`;
+      const cls = colorMap[diff] || "bg-zinc-100 text-zinc-700";
+      return `<span class="inline-block px-2 py-0.5 rounded-md text-[11px] font-semibold whitespace-nowrap ${cls}">${escapeHtml(diff)}</span>`;
     }
 
-    function getStatusBadge(status) {
+    function getStatusBadgeHtml(status) {
       if (status === "已完登") {
-        return `<span class="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-800 whitespace-nowrap">已完登</span>`;
+        return `<span class="inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 whitespace-nowrap">已完登</span>`;
       }
-      return `<span class="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-zinc-100 text-zinc-500 whitespace-nowrap">未完成</span>`;
+      return `<span class="inline-block px-2.5 py-0.5 rounded-full text-xs font-medium bg-zinc-100 text-zinc-500 whitespace-nowrap">未完成</span>`;
     }
 
-    function renderAll() {
-      const kw = document.getElementById("filterSearch").value.trim().toLowerCase();
-      const reg = document.getElementById("filterRegion").value;
-      const diff = document.getElementById("filterDiff").value;
-      const stat = document.getElementById("filterStatus").value;
+    function renderListView() {
+      const kw = (document.getElementById("filterSearch").value || "").trim().toLowerCase();
+      const regionVal = document.getElementById("filterRegion").value;
+      const diffVal = document.getElementById("filterDiff").value;
+      const statusVal = document.getElementById("filterStatus").value;
 
-      const isDefaultView = (kw === "" && reg === "ALL" && diff === "ALL" && stat === "RECORDED");
-      const resetBtn = document.getElementById("btnResetFilter");
-      if (!isDefaultView) resetBtn.classList.remove("hidden");
-      else resetBtn.classList.add("hidden");
+      const isNonDefault = kw !== "" || regionVal !== "ALL" || diffVal !== "ALL" || statusVal !== "RECORDED";
+      document.getElementById("btnResetFilter").classList.toggle("hidden", !isNonDefault);
 
       const tbody = document.getElementById("tableBody");
-      let rowsHtml = "";
-      let visible = 0;
+      let html = "";
+      let count = 0;
 
-      for (const p of PEAKS_DB) {
-        const rawRec = userRecords[p.id];
-        const hasAnyRecord = Boolean(
-          rawRec && (
-            rawRec.status === "已完登" ||
-            rawRec.date ||
-            rawRec.startTime ||
-            rawRec.endTime ||
-            rawRec.participants ||
-            rawRec.transport ||
-            rawRec.memo
-          )
-        );
-        const normalizedStatus = rawRec && rawRec.status === "已完登" ? "已完登" : "未完成";
-        const rec = rawRec ? { ...rawRec, status: normalizedStatus } : {
-          status: "未完成", date: "", startTime: "", endTime: "",
-          participants: "", transport: "", memo: ""
+      for (const peak of PEAKS_DB) {
+        const rec = userRecords[peak.id] || {
+          status: "未完成",
+          date: "",
+          startTime: "",
+          endTime: "",
+          participants: "",
+          transport: "",
+          memo: ""
         };
+        const isRecorded = hasMeaningfulRecord(rec);
 
-        if (stat === "RECORDED" && !hasAnyRecord) continue;
-        if (stat !== "ALL" && stat !== "RECORDED" && rec.status !== stat) continue;
-        if (reg !== "ALL" && p.region !== reg) continue;
-        if (diff !== "ALL" && p.diff !== diff) continue;
+        if (statusVal === "RECORDED" && !isRecorded) continue;
+        if (statusVal === "已完登" && rec.status !== "已完登") continue;
+        if (statusVal === "未完成" && rec.status === "已完登") continue;
+        if (regionVal !== "ALL" && peak.region !== regionVal) continue;
+        if (diffVal !== "ALL" && peak.diff !== diffVal) continue;
 
-        if (kw !== "") {
-          const hay = `${p.code} ${p.name} ${p.county} ${p.trailhead} ${rec.participants} ${rec.transport} ${rec.memo}`.toLowerCase();
+        if (kw) {
+          const hay = `${peak.code} ${peak.name} ${peak.county} ${peak.trailhead} ${rec.participants || ""} ${rec.transport || ""} ${rec.memo || ""}`.toLowerCase();
           if (!hay.includes(kw)) continue;
         }
 
-        visible++;
-        const dur = calcHours(rec.startTime, rec.endTime);
-        const hc = countPeople(rec.participants);
+        count++;
+        const dur = calcDurationHours(rec.startTime, rec.endTime);
+        const hc = countParticipants(rec.participants);
+        const rowBg = rec.status === "已完登" ? "bg-emerald-50/40 hover:bg-emerald-50/80" : "hover:bg-zinc-50";
 
-        const rowCls = rec.status === "已完登"
-          ? "bg-emerald-50/50 hover:bg-emerald-100/50 transition cursor-pointer"
-          : "hover:bg-zinc-50 transition cursor-pointer";
+        const dtHtml = (rec.date || (rec.startTime && rec.endTime))
+          ? `<div class="font-semibold text-zinc-900 text-xs">${escapeHtml(rec.date || "未設日期")}</div>
+             <div class="text-[11px] text-zinc-500">${(rec.startTime && rec.endTime && dur !== null) ? `${escapeHtml(rec.startTime)}–${escapeHtml(rec.endTime)} (${dur.toFixed(1)}h)` : ""}</div>`
+          : `<span class="text-zinc-300">—</span>`;
 
-        let dtHtml = '<span class="text-zinc-300">—</span>';
-        if (rec.date || (rec.startTime && rec.endTime)) {
-          dtHtml = `<div class="font-semibold text-zinc-900 text-xs">${escapeHtml(rec.date || "未設日期")}</div>`;
-          if (rec.startTime && rec.endTime) {
-            dtHtml += `<div class="text-[11px] text-zinc-500">${escapeHtml(rec.startTime)}–${escapeHtml(rec.endTime)} (${dur.toFixed(1)}h)</div>`;
-          }
-        }
+        const notesParts = [];
+        if (hc > 0) notesParts.push(`${rec.participants} (${hc}人)`);
+        if (rec.transport) notesParts.push(rec.transport);
+        if (rec.memo) notesParts.push(rec.memo);
+        const notesStr = notesParts.join(" · ");
+        const notesHtml = notesStr
+          ? `<div class="max-w-[220px] truncate text-xs text-zinc-700" title="${escapeHtml(notesStr)}">${escapeHtml(notesStr)}</div>`
+          : `<span class="text-zinc-300">—</span>`;
 
-        const notesArr = [];
-        if (hc > 0) notesArr.push(`${rec.participants} (${hc}人)`);
-        if (rec.transport) notesArr.push(rec.transport);
-        if (rec.memo) notesArr.push(rec.memo);
-        const noteHtml = notesArr.length > 0
-          ? `<div class="max-w-[210px] truncate text-xs text-zinc-700" title="${escapeHtml(notesArr.join(" · "))}">${escapeHtml(notesArr.join(" · "))}</div>`
-          : '<span class="text-zinc-300">—</span>';
-
-        rowsHtml += `
-          <tr class="${rowCls}" data-peak-id="${p.id}">
-            <td class="py-3 px-3.5 font-mono text-xs font-semibold text-zinc-500 whitespace-nowrap">${escapeHtml(p.code)}</td>
+        html += `
+          <tr data-peak-id="${peak.id}" class="${rowBg} transition cursor-pointer">
+            <td class="py-3 px-3.5 font-mono text-xs font-semibold text-zinc-500 whitespace-nowrap">${escapeHtml(peak.code)}</td>
             <td class="py-3 px-3.5">
-              <div>
-                <span class="font-bold text-zinc-900 text-sm">${escapeHtml(p.name)}</span>
-                <span class="font-mono text-xs text-zinc-400 ml-1.5">${p.elev.toLocaleString()}m</span>
+              <div class="flex items-baseline gap-1.5">
+                <span class="font-bold text-zinc-900">${escapeHtml(peak.name)}</span>
+                <span class="text-xs font-mono text-zinc-400">${peak.elev.toLocaleString()}m</span>
               </div>
-              <div class="text-xs text-zinc-500 mt-0.5 max-w-[260px] truncate" title="${escapeHtml(p.trailhead)}">${escapeHtml(p.trailhead)}</div>
+              <div class="text-xs text-zinc-400 truncate max-w-[260px] mt-0.5" title="${escapeHtml(peak.trailhead)}">${escapeHtml(peak.trailhead)}</div>
             </td>
-            <td class="py-3 px-3.5 whitespace-nowrap hidden sm:table-cell">
-              <div class="font-medium text-zinc-800 text-xs">${escapeHtml(p.county)}</div>
-              <div class="text-[11px] text-zinc-400">${escapeHtml(p.region)}</div>
+            <td class="py-3 px-3.5 hidden sm:table-cell whitespace-nowrap">
+              <div class="text-xs font-medium text-zinc-800">${escapeHtml(peak.county)}</div>
+              <div class="text-[11px] text-zinc-400">${escapeHtml(peak.region)}</div>
             </td>
-            <td class="py-3 px-3.5 text-center">${getDiffBadge(p.diff)}</td>
-            <td class="py-3 px-3.5 text-center text-xs text-zinc-600 whitespace-nowrap hidden md:table-cell">${escapeHtml(p.estTime)}</td>
-            <td class="py-3 px-3.5 text-center">${getStatusBadge(rec.status)}</td>
-            <td class="py-3 px-3.5 whitespace-nowrap hidden lg:table-cell">${dtHtml}</td>
-            <td class="py-3 px-3.5 hidden xl:table-cell">${noteHtml}</td>
+            <td class="py-3 px-3.5 text-center whitespace-nowrap">${getDiffBadgeHtml(peak.diff)}</td>
+            <td class="py-3 px-3.5 text-center text-xs text-zinc-600 hidden md:table-cell whitespace-nowrap">${escapeHtml(peak.estTime)}</td>
+            <td class="py-3 px-3.5 text-center whitespace-nowrap">${getStatusBadgeHtml(rec.status)}</td>
+            <td class="py-3 px-3.5 hidden lg:table-cell whitespace-nowrap">${dtHtml}</td>
+            <td class="py-3 px-3.5 hidden xl:table-cell">${notesHtml}</td>
             <td class="py-3 px-3.5 text-right whitespace-nowrap">
-              <button type="button" data-peak-id="${p.id}"
+              <button type="button" data-peak-id="${peak.id}"
                 class="px-2.5 py-1 rounded-lg bg-white hover:bg-zinc-100 text-zinc-700 border border-zinc-200 text-xs font-semibold cursor-pointer">
                 編輯
               </button>
@@ -948,163 +706,132 @@
         `;
       }
 
-      if (visible === 0) {
-        const emptyMsg = stat === "RECORDED" && !kw && reg === "ALL" && diff === "ALL"
-          ? '目前尚未新增任何完登紀錄。請點擊右上角「＋ 新增完登紀錄」，或點選「瀏覽全部 100 座」查詢名錄。'
-          : '找不到符合條件的小百岳，請嘗試調整搜尋關鍵字或篩選條件。';
-        rowsHtml = `<tr><td colspan="9" class="text-center py-12 px-4 text-zinc-400 text-xs">${emptyMsg}</td></tr>`;
+      if (count === 0) {
+        const emptyMsg = statusVal === "RECORDED" && !kw && regionVal === "ALL" && diffVal === "ALL"
+          ? `目前尚未新增任何完登紀錄。請點擊右上角「＋ 新增完登紀錄」建立第一筆，或點擊「瀏覽全部 100 座」查看完整名錄。`
+          : `找不到符合條件的小百岳，請嘗試調整搜尋關鍵字或篩選條件。`;
+        html = `<tr><td colspan="9" class="py-12 px-4 text-center text-xs sm:text-sm text-zinc-400">${escapeHtml(emptyMsg)}</td></tr>`;
       }
 
-      tbody.innerHTML = rowsHtml;
-      document.getElementById("visibleCount").textContent = visible;
-      updateKPIsAndStats();
+      tbody.innerHTML = html;
+      document.getElementById("visibleCount").textContent = count;
+      updateDashboardAndStats();
     }
 
-    function updateKPIsAndStats() {
-      let done = 0;
-      let hours = 0;
-      let people = 0;
+    function updateDashboardAndStats() {
+      let doneCount = 0;
+      let totalHours = 0;
+      let totalPeople = 0;
 
       const regions = ["北部", "桃竹苗", "中部", "南部", "東部", "離島"];
-      const regStats = {};
-      for (const r of regions) regStats[r] = { total: 0, done: 0 };
+      const regMap = {};
+      regions.forEach(r => { regMap[r] = { total: 0, done: 0 }; });
 
       const diffs = ["低", "低至中", "中", "中至高", "高"];
-      const diffStats = {};
-      for (const d of diffs) diffStats[d] = { total: 0, done: 0 };
+      const diffMap = {};
+      diffs.forEach(d => { diffMap[d] = { total: 0, done: 0 }; });
 
-      const activeTrips = [];
+      const tripRows = [];
 
-      for (const p of PEAKS_DB) {
-        regStats[p.region].total++;
-        diffStats[p.diff].total++;
+      for (const peak of PEAKS_DB) {
+        regMap[peak.region].total++;
+        diffMap[peak.diff].total++;
 
-        const rec = userRecords[p.id];
+        const rec = userRecords[peak.id];
         if (rec) {
-          const isDone = rec.status === "已完登";
-          if (isDone) {
-            done++;
-            regStats[p.region].done++;
-            diffStats[p.diff].done++;
+          if (rec.status === "已完登") {
+            doneCount++;
+            regMap[peak.region].done++;
+            diffMap[peak.diff].done++;
           }
+          const dur = calcDurationHours(rec.startTime, rec.endTime);
+          if (dur !== null) totalHours += dur;
 
-          const dur = calcHours(rec.startTime, rec.endTime);
-          if (dur !== null) hours += dur;
+          const hc = countParticipants(rec.participants);
+          totalPeople += hc;
 
-          const hc = countPeople(rec.participants);
-          people += hc;
-
-          if (isDone || rec.date || rec.participants || rec.transport || rec.memo) {
-            activeTrips.push({
-              peak: p,
-              rec: { ...rec, status: isDone ? "已完登" : "未完成" },
-              dur,
-              hc
-            });
+          if (hasMeaningfulRecord(rec)) {
+            tripRows.push({ peak, rec, dur, hc });
           }
         }
       }
 
-      const pct = ((done / 100) * 100).toFixed(1);
-      document.getElementById("kpiDone").textContent = done;
-      document.getElementById("kpiRemain").textContent = 100 - done;
-      document.getElementById("kpiRate").textContent = `${pct}%`;
-      document.getElementById("kpiBar").style.width = `${pct}%`;
-      document.getElementById("kpiHours").textContent = hours.toFixed(1);
-      document.getElementById("kpiPeople").textContent = people;
+      const ratePct = ((doneCount / 100) * 100).toFixed(1);
+      document.getElementById("kpiDone").textContent = doneCount;
+      document.getElementById("kpiRemain").textContent = 100 - doneCount;
+      document.getElementById("kpiRate").textContent = `${ratePct}%`;
+      document.getElementById("kpiBar").style.width = `${ratePct}%`;
+      document.getElementById("kpiHours").textContent = totalHours.toFixed(1);
+      document.getElementById("kpiPeople").textContent = totalPeople;
 
-      let regHtml = "";
-      for (const rName of regions) {
-        const st = regStats[rName];
-        const rPct = st.total > 0 ? Math.round((st.done / st.total) * 100) : 0;
-        regHtml += `
+      document.getElementById("statsRegionBody").innerHTML = regions.map(r => {
+        const st = regMap[r];
+        const pct = st.total > 0 ? Math.round((st.done / st.total) * 100) : 0;
+        return `
           <div>
-            <div class="flex justify-between text-xs mb-1.5">
-              <strong class="text-zinc-800">${rName}</strong>
-              <span class="text-zinc-500">${st.done} / ${st.total} 座 (${rPct}%)</span>
+            <div class="flex justify-between text-xs mb-1">
+              <span class="font-semibold text-zinc-700">${escapeHtml(r)}</span>
+              <span class="font-mono text-zinc-500">${st.done} / ${st.total} 座 (${pct}%)</span>
             </div>
-            <div class="w-full h-1.5 bg-zinc-200 rounded-full overflow-hidden">
-              <div class="h-full bg-[#1b4332] rounded-full transition-all duration-300" style="width:${rPct}%"></div>
+            <div class="w-full h-2 bg-zinc-100 rounded-full overflow-hidden">
+              <div class="h-full bg-[#1b4332] rounded-full transition-all duration-300" style="width: ${pct}%"></div>
             </div>
           </div>
         `;
-      }
-      document.getElementById("statsRegionBody").innerHTML = regHtml;
+      }).join("");
 
-      let diffHtml = "";
-      for (const dName of diffs) {
-        const dst = diffStats[dName];
-        const dPct = dst.total > 0 ? Math.round((dst.done / dst.total) * 100) : 0;
-        diffHtml += `
+      document.getElementById("statsDiffBody").innerHTML = diffs.map(d => {
+        const st = diffMap[d];
+        const pct = st.total > 0 ? Math.round((st.done / st.total) * 100) : 0;
+        return `
           <div>
-            <div class="flex justify-between text-xs mb-1.5">
-              <strong class="text-zinc-800">難度：${dName}</strong>
-              <span class="text-zinc-500">${dst.done} / ${dst.total} 座 (${dPct}%)</span>
+            <div class="flex justify-between text-xs mb-1">
+              <span class="font-semibold text-zinc-700">難度：${escapeHtml(d)}</span>
+              <span class="font-mono text-zinc-500">${st.done} / ${st.total} 座 (${pct}%)</span>
             </div>
-            <div class="w-full h-1.5 bg-zinc-200 rounded-full overflow-hidden">
-              <div class="h-full bg-[#2d6a4f] rounded-full transition-all duration-300" style="width:${dPct}%"></div>
+            <div class="w-full h-2 bg-zinc-100 rounded-full overflow-hidden">
+              <div class="h-full bg-[#2d6a4f] rounded-full transition-all duration-300" style="width: ${pct}%"></div>
             </div>
           </div>
         `;
-      }
-      document.getElementById("statsDiffBody").innerHTML = diffHtml;
+      }).join("");
 
       const tripBody = document.getElementById("tripListBody");
-      if (activeTrips.length === 0) {
-        tripBody.innerHTML = '<tr><td colspan="6" class="text-center py-10 px-4 text-zinc-400 text-xs">尚未建立任何完登紀錄，點擊右上角「＋ 新增完登紀錄」即可開始。</td></tr>';
+      if (tripRows.length === 0) {
+        tripBody.innerHTML = `<tr><td colspan="6" class="py-10 px-4 text-center text-xs text-zinc-400">尚未建立任何完登或出團紀錄，點擊右上角「＋ 新增完登紀錄」即可開始。</td></tr>`;
       } else {
-        let tHtml = "";
-        for (const item of activeTrips) {
-          const p = item.peak;
-          const rec = item.rec;
-          const timeStr = (rec.startTime && rec.endTime)
-            ? `${escapeHtml(rec.startTime)}–${escapeHtml(rec.endTime)} (<strong>${item.dur.toFixed(1)}h</strong>)`
-            : "—";
-          const pplStr = item.hc > 0 ? `${escapeHtml(rec.participants)} (${item.hc}人)` : "—";
-          const extraStr = [rec.transport, rec.memo].filter(Boolean).join(" · ") || "—";
-
-          tHtml += `
-            <tr data-peak-id="${p.id}" class="hover:bg-zinc-50 cursor-pointer">
+        tripBody.innerHTML = tripRows.map(({ peak, rec, dur, hc }) => {
+          const timeText = (rec.startTime && rec.endTime && dur !== null)
+            ? `${escapeHtml(rec.startTime)}–${escapeHtml(rec.endTime)} (<strong class="text-emerald-800">${dur.toFixed(1)}h</strong>)`
+            : `<span class="text-zinc-300">—</span>`;
+          const peopleText = hc > 0
+            ? `${escapeHtml(rec.participants)} <span class="text-zinc-400">(${hc}人)</span>`
+            : `<span class="text-zinc-300">—</span>`;
+          const extraText = [rec.transport, rec.memo].filter(Boolean).join(" · ") || `<span class="text-zinc-300">—</span>`;
+          return `
+            <tr data-peak-id="${peak.id}" class="hover:bg-zinc-50 cursor-pointer">
               <td class="py-3 px-4 whitespace-nowrap">
-                <span class="font-mono text-xs text-zinc-400 mr-1.5">${escapeHtml(p.code)}</span>
-                <strong class="text-zinc-900">${escapeHtml(p.name)}</strong>
+                <span class="font-mono text-xs text-zinc-400 mr-1.5">${escapeHtml(peak.code)}</span>
+                <strong class="text-zinc-900">${escapeHtml(peak.name)}</strong>
               </td>
-              <td class="py-3 px-4 text-center">${getStatusBadge(rec.status)}</td>
-              <td class="py-3 px-4 text-center text-xs">${escapeHtml(rec.date || "—")}</td>
-              <td class="py-3 px-4 text-center text-xs">${timeStr}</td>
-              <td class="py-3 px-4 text-xs">${pplStr}</td>
-              <td class="py-3 px-4 text-xs text-zinc-600">${escapeHtml(extraStr)}</td>
+              <td class="py-3 px-4 text-center whitespace-nowrap">${getStatusBadgeHtml(rec.status)}</td>
+              <td class="py-3 px-4 text-center text-xs text-zinc-700 whitespace-nowrap">${escapeHtml(rec.date || "—")}</td>
+              <td class="py-3 px-4 text-center text-xs text-zinc-700 whitespace-nowrap">${timeText}</td>
+              <td class="py-3 px-4 text-xs text-zinc-700">${peopleText}</td>
+              <td class="py-3 px-4 text-xs text-zinc-600">${escapeHtml(extraText)}</td>
             </tr>
           `;
-        }
-        tripBody.innerHTML = tHtml;
+        }).join("");
       }
     }
 
-    function openModal(peakId, isAddMode) {
-      buildPeakDropdown();
-      const wrap = document.getElementById("mPeakSelectWrap");
-      if (isAddMode) wrap.classList.remove("hidden");
-      else wrap.classList.add("hidden");
-
-      fillModalData(peakId, isAddMode);
-      const modalEl = document.getElementById("recordModal");
-      modalEl.classList.remove("hidden");
-      modalEl.classList.add("flex");
-    }
-
-    function fillModalData(peakId, isAddMode) {
-      const p = PEAKS_DB.find(item => item.id === peakId);
-      if (!p) return;
-
-      const today = new Date().toISOString().slice(0, 10);
-      const existing = userRecords[peakId];
-      const rec = existing ? {
-        ...existing,
-        status: existing.status === "已完登" ? "已完登" : "未完成"
-      } : {
+    function openRecordModal(peakId, isAddMode) {
+      buildPeakDropdownOptions();
+      const peak = PEAKS_DB.find(p => p.id === Number(peakId)) || PEAKS_DB[0];
+      const todayStr = new Date().toISOString().slice(0, 10);
+      const existing = userRecords[peak.id] || {
         status: isAddMode ? "已完登" : "未完成",
-        date: isAddMode ? today : "",
+        date: isAddMode ? todayStr : "",
         startTime: "",
         endTime: "",
         participants: "",
@@ -1112,81 +839,154 @@
         memo: ""
       };
 
-      document.getElementById("mPeakId").value = p.id;
-      document.getElementById("mPeakSelect").value = p.id;
-      document.getElementById("mCode").textContent = p.code;
-      document.getElementById("mName").textContent = p.name;
-      document.getElementById("mElev").textContent = `${p.elev.toLocaleString()}m`;
-      document.getElementById("mCounty").textContent = `${p.county} • ${p.region}`;
-      document.getElementById("mDiff").textContent = p.diff;
-      document.getElementById("mEstTime").textContent = p.estTime;
-      document.getElementById("mTrailhead").textContent = p.trailhead;
-      document.getElementById("mGear").textContent = p.gear;
-      document.getElementById("mNote").textContent = p.note;
+      document.getElementById("mPeakSelectWrap").classList.toggle("hidden", !isAddMode);
+      document.getElementById("mPeakId").value = peak.id;
+      document.getElementById("mPeakSelect").value = peak.id;
+      document.getElementById("mCode").textContent = peak.code;
+      document.getElementById("mName").textContent = peak.name;
+      document.getElementById("mElev").textContent = `${peak.elev.toLocaleString()}m`;
+      document.getElementById("mCounty").textContent = `${peak.county} • ${peak.region}`;
+      document.getElementById("mDiff").textContent = peak.diff;
+      document.getElementById("mEstTime").textContent = peak.estTime;
+      document.getElementById("mTrailhead").textContent = peak.trailhead;
+      document.getElementById("mGear").textContent = peak.gear;
+      document.getElementById("mNote").textContent = peak.note;
 
-      document.getElementById("mStatus").value = rec.status;
-      document.getElementById("mDate").value = rec.date || "";
-      document.getElementById("mStart").value = rec.startTime || "";
-      document.getElementById("mEnd").value = rec.endTime || "";
-      document.getElementById("mParticipants").value = rec.participants || "";
-      document.getElementById("mTransport").value = rec.transport || "";
-      document.getElementById("mMemo").value = rec.memo || "";
+      document.getElementById("mStatus").value = existing.status === "已完登" ? "已完登" : "未完成";
+      document.getElementById("mDate").value = existing.date || "";
+      document.getElementById("mStart").value = existing.startTime || "";
+      document.getElementById("mEnd").value = existing.endTime || "";
+      document.getElementById("mParticipants").value = existing.participants || "";
+      document.getElementById("mTransport").value = existing.transport || "";
+      document.getElementById("mMemo").value = existing.memo || "";
 
-      refreshModalPreviews();
+      refreshModalCalculatedFields();
+      const modal = document.getElementById("recordModal");
+      modal.classList.remove("hidden");
+      modal.classList.add("flex");
     }
 
-    function closeModal() {
-      const modalEl = document.getElementById("recordModal");
-      modalEl.classList.add("hidden");
-      modalEl.classList.remove("flex");
+    function closeRecordModal() {
+      const modal = document.getElementById("recordModal");
+      modal.classList.add("hidden");
+      modal.classList.remove("flex");
     }
 
-    function refreshModalPreviews() {
+    function refreshModalCalculatedFields() {
       const s = document.getElementById("mStart").value;
       const e = document.getElementById("mEnd").value;
-      const dur = calcHours(s, e);
+      const dur = calcDurationHours(s, e);
       document.getElementById("mDuration").textContent = dur !== null ? `${dur.toFixed(2)} 小時` : "--";
 
       const ppl = document.getElementById("mParticipants").value;
-      document.getElementById("mHeadcount").textContent = countPeople(ppl);
+      document.getElementById("mHeadcount").textContent = countParticipants(ppl);
     }
 
-    async function saveModalRecord() {
-      const id = parseInt(document.getElementById("mPeakId").value, 10);
-      const status = document.getElementById("mStatus").value;
-      const date = document.getElementById("mDate").value;
-      const startTime = document.getElementById("mStart").value;
-      const endTime = document.getElementById("mEnd").value;
-      const participants = document.getElementById("mParticipants").value.trim();
-      const transport = document.getElementById("mTransport").value.trim();
-      const memo = document.getElementById("mMemo").value.trim();
+    async function persistPeakRecord(peakId, recordObj) {
+      const idNum = Number(peakId);
+      const shouldDelete = !hasMeaningfulRecord(recordObj);
 
-      const peak = PEAKS_DB.find(item => item.id === id);
-      closeModal();
-
-      if (status === "未完成" && !date && !startTime && !endTime && !participants && !transport && !memo) {
-        await deleteRecord(id);
-        showToast(`已重設「${peak ? peak.name : ""}」紀錄`);
+      if (shouldDelete) {
+        delete userRecords[idNum];
       } else {
-        await saveRecord(id, { status, date, startTime, endTime, participants, transport, memo });
-        showToast(`✅ 已儲存「${peak ? peak.name : ""}」的紀錄`);
+        userRecords[idNum] = {
+          status: recordObj.status === "已完登" ? "已完登" : "未完成",
+          date: recordObj.date || "",
+          startTime: recordObj.startTime || "",
+          endTime: recordObj.endTime || "",
+          participants: recordObj.participants || "",
+          transport: recordObj.transport || "",
+          memo: recordObj.memo || ""
+        };
+      }
+
+      saveLocalRecords();
+      renderListView();
+
+      if (isCloudActive && db && currentUser) {
+        try {
+          const docRef = doc(db, "artifacts", appId, "public", "data", activeCollectionName, String(idNum));
+          if (shouldDelete) {
+            await deleteDoc(docRef);
+          } else {
+            await setDoc(docRef, {
+              peakId: idNum,
+              ...userRecords[idNum],
+              updatedAt: new Date().toISOString(),
+              updatedBy: currentUser.uid
+            });
+          }
+          showToast("☁️ 已儲存至雲端並即時同步");
+          return;
+        } catch (err) {
+          console.error("雲端寫入失敗:", err);
+          showToast("⚠️ 已存至本機（雲端寫入暫時失敗，請檢查 Firebase 授權網域與規則）");
+          return;
+        }
+      }
+
+      showToast("💾 已儲存至本機（目前為離線或尚未連上雲端）");
+    }
+
+    async function initCloudSync() {
+      if (typeof unsubscribeSnapshot === "function") {
+        unsubscribeSnapshot();
+        unsubscribeSnapshot = null;
+      }
+
+      const firebaseConfig = CUSTOM_FIREBASE_CONFIG;
+
+      try {
+        const cloudApp = initializeApp(firebaseConfig, `peaksApp_${activeCollectionName}`);
+        auth = getAuth(cloudApp);
+        db = getFirestore(cloudApp);
+
+        // 直接使用匿名登入連線至您的 taiwan-peaks-log 專案（避免預覽環境內建 Token 與您的專案 ID 衝突）
+        const cred = await signInAnonymously(auth);
+        currentUser = cred.user || auth.currentUser;
+        isCloudActive = true;
+        setSyncBadge("cloud", "雲端即時同步中", "所有夥伴開啟連結即可即時查詢與共同編輯");
+
+        const colRef = collection(db, "artifacts", appId, "public", "data", activeCollectionName);
+        unsubscribeSnapshot = onSnapshot(colRef, (snap) => {
+          const nextRecords = {};
+          snap.forEach(d => {
+            const data = d.data() || {};
+            const pid = Number(data.peakId || d.id);
+            if (!Number.isNaN(pid)) {
+              nextRecords[pid] = {
+                status: data.status === "已完登" ? "已完登" : "未完成",
+                date: data.date || "",
+                startTime: data.startTime || "",
+                endTime: data.endTime || "",
+                participants: data.participants || "",
+                transport: data.transport || "",
+                memo: data.memo || ""
+              };
+            }
+          });
+          userRecords = nextRecords;
+          saveLocalRecords();
+          renderListView();
+        }, (err) => {
+          console.error("雲端監聽發生錯誤:", err);
+          isCloudActive = false;
+          setSyncBadge("local", "雲端連線中斷（改用本機）", "請確認 Firebase Firestore 規則與匿名登入已開啟");
+        });
+      } catch (err) {
+        console.error("初始化 Firebase 失敗:", err);
+        isCloudActive = false;
+        setSyncBadge("local", "本機儲存模式", "請確認 Firebase 匿名登入與 Firestore Database 已啟用");
       }
     }
 
-    async function clearModalRecord() {
-      const id = parseInt(document.getElementById("mPeakId").value, 10);
-      closeModal();
-      await deleteRecord(id);
-      showToast("已重設該山岳紀錄");
-    }
-
-    function switchTab(tabName) {
+    function switchMainTab(tab) {
       const btnList = document.getElementById("tabBtnList");
       const btnStats = document.getElementById("tabBtnStats");
       const viewList = document.getElementById("viewList");
       const viewStats = document.getElementById("viewStats");
 
-      if (tabName === "list") {
+      if (tab === "list") {
         btnList.className = "px-4 py-1.5 rounded-lg text-xs sm:text-sm font-semibold bg-white text-[#1b4332] shadow-sm transition cursor-pointer";
         btnStats.className = "px-4 py-1.5 rounded-lg text-xs sm:text-sm font-semibold text-zinc-600 hover:text-zinc-900 transition cursor-pointer";
         viewList.classList.remove("hidden");
@@ -1196,200 +996,212 @@
         btnList.className = "px-4 py-1.5 rounded-lg text-xs sm:text-sm font-semibold text-zinc-600 hover:text-zinc-900 transition cursor-pointer";
         viewStats.classList.remove("hidden");
         viewList.classList.add("hidden");
-        updateKPIsAndStats();
+        updateDashboardAndStats();
       }
     }
 
-    function initAppUI() {
-      closeModal();
-      closeCloudModal();
-      buildTimeOptions();
-      buildPeakDropdown();
-      initDataLayer();
+    document.addEventListener("DOMContentLoaded", () => {
+      buildTimeSelectOptions();
+      buildPeakDropdownOptions();
+      loadLocalRecords();
+      renderListView();
+      initCloudSync();
 
-      const triggerAdd = () => {
-        const firstUnfinished = PEAKS_DB.find(p => !userRecords[p.id] || userRecords[p.id].status !== "已完登") || PEAKS_DB[0];
-        openModal(firstUnfinished.id, true);
+      const triggerAddNew = () => {
+        const firstUnfinished = PEAKS_DB.find(p => userRecords[p.id]?.status !== "已完登") || PEAKS_DB[0];
+        openRecordModal(firstUnfinished.id, true);
       };
 
-      document.getElementById("btnOpenAdd").addEventListener("click", triggerAdd);
-      document.getElementById("btnOpenAdd2").addEventListener("click", triggerAdd);
-      document.getElementById("btnOpenCloudModal").addEventListener("click", openCloudModal);
-      document.getElementById("btnCloseCloudModal").addEventListener("click", closeCloudModal);
-      document.getElementById("btnCancelCloudModal").addEventListener("click", closeCloudModal);
-      document.getElementById("cloudModal").addEventListener("click", (e) => {
-        if (e.target.id === "cloudModal") closeCloudModal();
+      document.getElementById("btnOpenAdd").addEventListener("click", triggerAddNew);
+      document.getElementById("btnOpenAdd2").addEventListener("click", triggerAddNew);
+
+      document.getElementById("filterSearch").addEventListener("input", renderListView);
+      document.getElementById("filterRegion").addEventListener("change", renderListView);
+      document.getElementById("filterDiff").addEventListener("change", renderListView);
+      document.getElementById("filterStatus").addEventListener("change", renderListView);
+
+      document.getElementById("btnShowAll100").addEventListener("click", () => {
+        document.getElementById("filterStatus").value = "ALL";
+        renderListView();
       });
-
-      document.getElementById("btnSaveCloudConfig").addEventListener("click", async () => {
-        const roomVal = (document.getElementById("cloudRoomInput").value || "taiwan_100_small_peaks_shared").trim();
-        const rawCfgText = document.getElementById("cloudConfigInput").value;
-        const parsedCfg = parseFirebaseConfigText(rawCfgText);
-
-        if (!parsedCfg || !parsedCfg.apiKey || !parsedCfg.projectId) {
-          document.getElementById("cloudFeedbackText").textContent = "⚠️ 請貼上有效的 Firebase 設定（需包含 apiKey 與 projectId）。";
-          return;
-        }
-
-        try {
-          window.localStorage.setItem(CLOUD_ROOM_STORAGE_KEY, roomVal);
-          window.localStorage.setItem(CLOUD_CONFIG_STORAGE_KEY, JSON.stringify(parsedCfg));
-        } catch (e) {
-          // Ignore storage error
-        }
-
-        closeCloudModal();
-        await initDataLayer();
-        showToast("☁️ 已套用多人即時雲端同步設定");
-      });
-
-      document.getElementById("btnResetCloudConfig").addEventListener("click", async () => {
-        try {
-          window.localStorage.removeItem(CLOUD_ROOM_STORAGE_KEY);
-          window.localStorage.removeItem(CLOUD_CONFIG_STORAGE_KEY);
-        } catch (e) {
-          // Ignore storage error
-        }
-        closeCloudModal();
-        await initDataLayer();
-        showToast("已清除雲端設定，切回本機儲存模式");
-      });
-
-      document.getElementById("filterSearch").addEventListener("input", renderAll);
-      document.getElementById("filterRegion").addEventListener("change", renderAll);
-      document.getElementById("filterDiff").addEventListener("change", renderAll);
-      document.getElementById("filterStatus").addEventListener("change", renderAll);
 
       document.getElementById("btnResetFilter").addEventListener("click", () => {
         document.getElementById("filterSearch").value = "";
         document.getElementById("filterRegion").value = "ALL";
         document.getElementById("filterDiff").value = "ALL";
         document.getElementById("filterStatus").value = "RECORDED";
-        renderAll();
+        renderListView();
       });
 
-      document.getElementById("btnShowAll100").addEventListener("click", () => {
-        document.getElementById("filterSearch").value = "";
-        document.getElementById("filterRegion").value = "ALL";
-        document.getElementById("filterDiff").value = "ALL";
-        document.getElementById("filterStatus").value = "ALL";
-        renderAll();
-      });
-
-      document.getElementById("tabBtnList").addEventListener("click", () => switchTab("list"));
-      document.getElementById("tabBtnStats").addEventListener("click", () => switchTab("stats"));
+      document.getElementById("tabBtnList").addEventListener("click", () => switchMainTab("list"));
+      document.getElementById("tabBtnStats").addEventListener("click", () => switchMainTab("stats"));
 
       const handleRowClick = (e) => {
-        const row = e.target.closest("[data-peak-id]");
-        if (row) {
-          const id = parseInt(row.getAttribute("data-peak-id"), 10);
-          openModal(id, false);
+        let el = e.target;
+        while (el && el !== e.currentTarget) {
+          if (el.hasAttribute("data-peak-id")) {
+            const pid = Number(el.getAttribute("data-peak-id"));
+            if (!Number.isNaN(pid)) {
+              openRecordModal(pid, false);
+              return;
+            }
+          }
+          el = el.parentElement;
         }
       };
 
       document.getElementById("tableBody").addEventListener("click", handleRowClick);
       document.getElementById("tripListBody").addEventListener("click", handleRowClick);
 
-      document.getElementById("mPeakSelect").addEventListener("change", function() {
-        fillModalData(parseInt(this.value, 10), true);
+      document.getElementById("mPeakSelect").addEventListener("change", (e) => {
+        openRecordModal(Number(e.target.value), true);
       });
 
-      document.getElementById("mStart").addEventListener("change", refreshModalPreviews);
-      document.getElementById("mEnd").addEventListener("change", refreshModalPreviews);
-      document.getElementById("mParticipants").addEventListener("input", refreshModalPreviews);
+      document.getElementById("mStart").addEventListener("change", refreshModalCalculatedFields);
+      document.getElementById("mEnd").addEventListener("change", refreshModalCalculatedFields);
+      document.getElementById("mParticipants").addEventListener("input", refreshModalCalculatedFields);
 
-      document.getElementById("btnCloseModal").addEventListener("click", closeModal);
-      document.getElementById("btnCancelModal").addEventListener("click", closeModal);
-      document.getElementById("btnSaveRecord").addEventListener("click", saveModalRecord);
-      document.getElementById("btnClearRecord").addEventListener("click", clearModalRecord);
-
+      document.getElementById("btnCloseModal").addEventListener("click", closeRecordModal);
+      document.getElementById("btnCancelModal").addEventListener("click", closeRecordModal);
       document.getElementById("recordModal").addEventListener("click", (e) => {
-        if (e.target.id === "recordModal") closeModal();
+        if (e.target === e.currentTarget) closeRecordModal();
       });
 
-      // 匯出 CSV
+      document.getElementById("btnSaveRecord").addEventListener("click", async () => {
+        const pid = Number(document.getElementById("mPeakId").value);
+        const recPayload = {
+          status: document.getElementById("mStatus").value === "已完登" ? "已完登" : "未完成",
+          date: document.getElementById("mDate").value || "",
+          startTime: document.getElementById("mStart").value || "",
+          endTime: document.getElementById("mEnd").value || "",
+          participants: (document.getElementById("mParticipants").value || "").trim(),
+          transport: (document.getElementById("mTransport").value || "").trim(),
+          memo: (document.getElementById("mMemo").value || "").trim()
+        };
+        await persistPeakRecord(pid, recPayload);
+        closeRecordModal();
+      });
+
+      document.getElementById("btnClearRecord").addEventListener("click", async () => {
+        const pid = Number(document.getElementById("mPeakId").value);
+        await persistPeakRecord(pid, {
+          status: "未完成",
+          date: "",
+          startTime: "",
+          endTime: "",
+          participants: "",
+          transport: "",
+          memo: ""
+        });
+        closeRecordModal();
+      });
+
       document.getElementById("btnExportCsv").addEventListener("click", () => {
         const headers = [
           "編號", "小百岳名稱", "海拔(m)", "行政縣市", "區域", "難度等級",
           "預估來回耗時", "常用起登點", "完登狀態", "攀登日期",
           "起始時間", "結束時間", "實際總耗時(時)", "參加者名單", "參加人數", "車輛接駁", "團務備註"
         ];
-        const lines = [headers.join(",")];
-        for (const p of PEAKS_DB) {
-          const rec = userRecords[p.id] || {};
-          const dur = calcHours(rec.startTime, rec.endTime);
-          const hc = countPeople(rec.participants);
-          const statusVal = rec.status === "已完登" ? "已完登" : "未完成";
-          const cols = [
-            p.code, p.name, p.elev, p.county, p.region, p.diff,
-            p.estTime, p.trailhead, statusVal, rec.date || "",
-            rec.startTime || "", rec.endTime || "", dur !== null ? dur.toFixed(2) : "",
-            rec.participants || "", hc > 0 ? hc : "", rec.transport || "", rec.memo || ""
-          ];
-          lines.push(cols.map(v => `"${String(v).replace(/"/g, '""')}"`).join(","));
+        const csvRows = [headers];
+
+        for (const peak of PEAKS_DB) {
+          const rec = userRecords[peak.id] || {};
+          const dur = calcDurationHours(rec.startTime, rec.endTime);
+          const hc = countParticipants(rec.participants);
+          csvRows.push([
+            peak.code,
+            peak.name,
+            peak.elev,
+            peak.county,
+            peak.region,
+            peak.diff,
+            peak.estTime,
+            peak.trailhead,
+            rec.status === "已完登" ? "已完登" : "未完成",
+            rec.date || "",
+            rec.startTime || "",
+            rec.endTime || "",
+            dur !== null ? dur.toFixed(2) : "",
+            rec.participants || "",
+            hc > 0 ? hc : "",
+            rec.transport || "",
+            rec.memo || ""
+          ]);
         }
-        const blob = new Blob(["\uFEFF" + lines.join("\n")], { type: "text/csv;charset=utf-8;" });
+
+        const csvContent = "\uFEFF" + csvRows
+          .map(row => row.map(val => `"${String(val ?? "").replace(/"/g, '""')}"`).join(","))
+          .join("\n");
+
+        const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
         const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `台灣小百岳100座紀錄表_${new Date().toISOString().slice(0, 10)}.csv`;
-        a.click();
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `台灣小百岳100座紀錄表_${new Date().toISOString().slice(0, 10)}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
         URL.revokeObjectURL(url);
-        showToast("已匯出 CSV 紀錄表");
+        showToast("📄 已匯出 CSV 紀錄表");
       });
 
-      // 匯出 JSON 備份
       document.getElementById("btnExportJson").addEventListener("click", () => {
         const blob = new Blob([JSON.stringify(userRecords, null, 2)], { type: "application/json" });
         const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `台灣小百岳完登日誌備份_${new Date().toISOString().slice(0, 10)}.json`;
-        a.click();
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `台灣小百岳完登日誌備份_${new Date().toISOString().slice(0, 10)}.json`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
         URL.revokeObjectURL(url);
-        showToast("已下載 JSON 備份檔");
+        showToast("💾 已下載 JSON 備份檔");
       });
 
-      // 還原 JSON 備份
       document.getElementById("inputImportJson").addEventListener("change", (e) => {
-        const file = e.target.files[0];
+        const file = e.target.files && e.target.files[0];
         if (!file) return;
         const reader = new FileReader();
         reader.onload = async (ev) => {
           try {
-            const parsed = JSON.parse(ev.target.result);
-            if (parsed && typeof parsed === "object") {
-              const entries = Object.entries(parsed);
-              for (const [idStr, rec] of entries) {
-                const pid = parseInt(idStr, 10);
-                if (!isNaN(pid) && rec) {
-                  await saveRecord(pid, {
-                    status: rec.status === "已完登" ? "已完登" : "未完成",
-                    date: rec.date || "",
-                    startTime: rec.startTime || "",
-                    endTime: rec.endTime || "",
-                    participants: rec.participants || "",
-                    transport: rec.transport || "",
-                    memo: rec.memo || ""
+            const parsed = JSON.parse(String(ev.target.result || "{}"));
+            if (!parsed || typeof parsed !== "object") {
+              showToast("❌ JSON 檔案內容無效");
+              return;
+            }
+            userRecords = parsed;
+            saveLocalRecords();
+            renderListView();
+            if (isCloudActive && db && currentUser) {
+              for (const [k, v] of Object.entries(userRecords)) {
+                const pid = Number(k);
+                if (!Number.isNaN(pid) && hasMeaningfulRecord(v)) {
+                  await setDoc(doc(db, "artifacts", appId, "public", "data", activeCollectionName, String(pid)), {
+                    peakId: pid,
+                    status: v.status === "已完登" ? "已完登" : "未完成",
+                    date: v.date || "",
+                    startTime: v.startTime || "",
+                    endTime: v.endTime || "",
+                    participants: v.participants || "",
+                    transport: v.transport || "",
+                    memo: v.memo || "",
+                    updatedAt: new Date().toISOString(),
+                    updatedBy: currentUser.uid
                   });
                 }
               }
-              showToast(`✅ 已成功還原 ${entries.length} 筆紀錄！`);
+              showToast("☁️ 已還原 JSON 並同步至雲端");
+            } else {
+              showToast("📂 已還原 JSON 備份紀錄");
             }
           } catch (err) {
-            showToast("❌ 檔案格式不正確，請選擇正確的 JSON 備份檔");
+            showToast("❌ 無法解析 JSON 備份檔");
           }
         };
         reader.readAsText(file);
         e.target.value = "";
       });
-    }
-
-    if (document.readyState === "loading") {
-      document.addEventListener("DOMContentLoaded", initAppUI);
-    } else {
-      initAppUI();
-    }
+    });
   </script>
 </body>
 </html>
