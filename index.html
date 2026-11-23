@@ -588,11 +588,24 @@
         ? `目前狀態：已連線至「${activeCollectionName}」即時同步中`
         : "目前狀態：尚未設定自訂 Firebase，使用本機快取模式";
       document.getElementById("cloudModal").classList.remove("hidden");
+      document.getElementById("cloudModal").classList.add("flex");
     }
 
     function closeCloudModal() {
       document.getElementById("cloudModal").classList.add("hidden");
+      document.getElementById("cloudModal").classList.remove("flex");
     }
+
+    function loadLocalRecords() {
+      try {
+        const raw = window.localStorage.getItem(LOCAL_STORAGE_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed && typeof parsed === "object") {
+            memoryFallbackRecords = { ...parsed };
+            userRecords = { ...parsed };
+            return;
+          }
         }
       } catch (e) {
         console.warn("讀取本機快取失敗，改用記憶體快取:", e);
@@ -606,14 +619,6 @@
         window.localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(userRecords));
       } catch (e) {
         console.warn("儲存本機快取失敗，已保留於目前工作階段:", e);
-      }
-    }
-
-    function saveLocalRecords() {
-      try {
-        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(userRecords));
-      } catch (e) {
-        console.warn("儲存本機快取失敗:", e);
       }
     }
 
@@ -647,7 +652,6 @@
     }
 
     async function initDataLayer() {
-      // 先載入本機快取，確保任何環境開啟瞬間就有完整畫面
       loadLocalRecords();
       renderAll();
 
@@ -659,7 +663,6 @@
       const { savedRoom, savedCfg } = loadSavedCloudOverride();
       activeCollectionName = (savedRoom || "taiwan_100_small_peaks_shared").replace(/[^a-zA-Z0-9_-]/g, "_");
 
-      // 偵測是否有環境內建 Firebase 或使用者自行填入的設定
       let activeConfig = null;
       if (savedCfg && typeof savedCfg === "object" && savedCfg.apiKey && savedCfg.projectId) {
         activeConfig = savedCfg;
@@ -740,22 +743,22 @@
       renderAll();
 
       if (!isCloudActive || !db || !currentUser) {
-        updateSyncStatus("local", "已即時儲存");
+        updateSyncStatus("local", "已存至本機");
         return;
       }
 
       try {
-        updateSyncStatus("saving", "正在即時寫入雲端...");
+        updateSyncStatus("saving", "正在存到雲端...");
         const docRef = doc(db, "artifacts", appId, "public", "data", activeCollectionName, String(peakId));
         await setDoc(docRef, {
           ...recordObj,
           updatedBy: currentUser.uid,
           updatedAt: new Date().toISOString()
         });
-        updateSyncStatus("live", "已即時儲存並同步");
+        updateSyncStatus("live", "已存到雲端並同步");
       } catch (err) {
         console.error("雲端寫入失敗:", err);
-        updateSyncStatus("local", "已儲存於本機");
+        updateSyncStatus("local", "雲端寫入失敗，已存本機");
       }
     }
 
@@ -765,18 +768,18 @@
       renderAll();
 
       if (!isCloudActive || !db || !currentUser) {
-        updateSyncStatus("local", "已更新紀錄");
+        updateSyncStatus("local", "已更新本機紀錄");
         return;
       }
 
       try {
-        updateSyncStatus("saving", "正在清除紀錄...");
+        updateSyncStatus("saving", "正在同步清除雲端紀錄...");
         const docRef = doc(db, "artifacts", appId, "public", "data", activeCollectionName, String(peakId));
         await deleteDoc(docRef);
-        updateSyncStatus("live", "已即時儲存並同步");
+        updateSyncStatus("live", "已存到雲端並同步");
       } catch (err) {
         console.error("雲端刪除失敗:", err);
-        updateSyncStatus("local", "已更新紀錄");
+        updateSyncStatus("local", "雲端同步失敗，已更新本機");
       }
     }
 
@@ -1085,7 +1088,9 @@
       else wrap.classList.add("hidden");
 
       fillModalData(peakId, isAddMode);
-      document.getElementById("recordModal").classList.remove("hidden");
+      const modalEl = document.getElementById("recordModal");
+      modalEl.classList.remove("hidden");
+      modalEl.classList.add("flex");
     }
 
     function fillModalData(peakId, isAddMode) {
@@ -1131,7 +1136,9 @@
     }
 
     function closeModal() {
-      document.getElementById("recordModal").classList.add("hidden");
+      const modalEl = document.getElementById("recordModal");
+      modalEl.classList.add("hidden");
+      modalEl.classList.remove("flex");
     }
 
     function refreshModalPreviews() {
@@ -1194,6 +1201,8 @@
     }
 
     function initAppUI() {
+      closeModal();
+      closeCloudModal();
       buildTimeOptions();
       buildPeakDropdown();
       initDataLayer();
