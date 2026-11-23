@@ -3,1004 +3,1384 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>台灣小百岳 100 座完登日誌與出團系統</title>
+  <title>台灣小百岳 100 座完登日誌</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    :root {
-      --bg: #f5f7f6;
-      --surface: #ffffff;
-      --primary: #1b4332;
-      --primary-hover: #2d6a4f;
-      --primary-soft: #e9f3ee;
-      --accent: #d97706;
-      --accent-soft: #fef3c7;
-      --text-main: #18181b;
-      --text-sub: #52525b;
-      --text-muted: #71717a;
-      --border: #e4e4e7;
-      --radius: 14px;
-    }
-
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft JhengHei", "PingFang TC", "Noto Sans TC", sans-serif;
-      background: var(--bg);
-      color: var(--text-main);
-      line-height: 1.5;
+      font-family: 'Inter', 'Noto Sans TC', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: #f6f8f7;
+      color: #18181b;
     }
-
-    /* 頂部列 */
-    .topbar {
-      background: #ffffff;
-      border-bottom: 1px solid var(--border);
-      position: sticky;
-      top: 0;
-      z-index: 20;
-    }
-    .topbar-inner {
-      max-width: 1180px;
-      margin: 0 auto;
-      padding: 14px 20px;
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-    }
-    .brand { display: flex; align-items: center; gap: 12px; }
-    .brand-logo {
-      width: 40px; height: 40px; border-radius: 10px;
-      background: var(--primary); color: #fff;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 20px; font-weight: 700;
-    }
-    .brand-title { font-size: 18px; font-weight: 700; }
-    .brand-sub { font-size: 12px; color: var(--text-muted); }
-
-    .top-actions { display: flex; flex-wrap: wrap; gap: 8px; }
-
-    /* 按鈕樣式 */
-    .btn {
-      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-      padding: 9px 15px; border-radius: 10px; font-size: 13px; font-weight: 600;
-      border: 1px solid transparent; cursor: pointer; font-family: inherit;
-      transition: background 0.15s, border-color 0.15s;
-    }
-    .btn-primary { background: var(--primary); color: #fff; }
-    .btn-primary:hover { background: var(--primary-hover); }
-    .btn-accent { background: #d97706; color: #fff; }
-    .btn-accent:hover { background: #b45309; }
-    .btn-outline { background: #fff; color: var(--text-sub); border-color: var(--border); }
-    .btn-outline:hover { background: #f4f4f5; color: var(--text-main); }
-    .btn-sm { padding: 5px 10px; font-size: 12px; border-radius: 8px; }
-    .btn-danger { background: #fef2f2; color: #dc2626; border-color: #fecaca; }
-    .btn-danger:hover { background: #fee2e2; }
-
-    .container {
-      max-width: 1180px;
-      margin: 0 auto;
-      padding: 20px 20px 60px;
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
-    }
-
-    /* 提示訊息橫幅 */
-    .toast-banner {
-      display: none;
-      padding: 12px 16px;
-      border-radius: 12px;
-      background: #dcfce7;
-      border: 1px solid #86efac;
-      color: #14532d;
-      font-size: 13px;
-      font-weight: 600;
-      align-items: center;
-      justify-content: space-between;
-    }
-    .toast-banner.show { display: flex; }
-
-    /* KPI 卡片 */
-    .kpi-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 14px;
-    }
-    @media (max-width: 850px) { .kpi-grid { grid-template-columns: repeat(2, 1fr); } }
-    @media (max-width: 480px) { .kpi-grid { grid-template-columns: 1fr; } }
-
-    .kpi-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 16px 18px;
-    }
-    .kpi-label { font-size: 12px; font-weight: 600; color: var(--text-muted); }
-    .kpi-num { font-size: 26px; font-weight: 700; margin-top: 4px; color: var(--text-main); }
-    .kpi-unit { font-size: 13px; font-weight: 500; color: var(--text-muted); margin-left: 4px; }
-    .kpi-note { font-size: 11px; color: var(--text-muted); margin-top: 6px; }
-    .prog-bar { width: 100%; height: 6px; background: #e4e4e7; border-radius: 99px; margin-top: 8px; overflow: hidden; }
-    .prog-fill { height: 100%; background: var(--primary); width: 0%; transition: width 0.3s; }
-
-    /* 通用區塊卡片 */
-    .card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      overflow: hidden;
-    }
-    .card-header {
-      padding: 15px 20px;
-      border-bottom: 1px solid var(--border);
-      background: #fafcfb;
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-    }
-    .card-title { font-size: 15px; font-weight: 700; color: var(--text-main); }
-    .card-sub { font-size: 12px; color: var(--text-muted); }
-    .card-body { padding: 20px; }
-
-    /* 新增/編輯表單區 (內嵌展開式，手機電腦 100% 好操作) */
-    .form-panel {
-      border: 2px solid var(--primary);
-      box-shadow: 0 6px 20px rgba(27, 67, 50, 0.08);
-    }
-    .form-grid-3 {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 14px;
-    }
-    .form-grid-2 {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 14px;
-    }
-    @media (max-width: 768px) {
-      .form-grid-3, .form-grid-2 { grid-template-columns: 1fr; }
-    }
-
-    .field-label {
-      display: block;
-      font-size: 12px;
-      font-weight: 700;
-      color: var(--text-sub);
-      margin-bottom: 6px;
-    }
-    .ctrl {
-      width: 100%;
-      padding: 9px 12px;
-      font-size: 13px;
-      border: 1px solid #d4d4d8;
-      border-radius: 10px;
-      background: #ffffff;
-      color: var(--text-main);
-      font-family: inherit;
-    }
-    .ctrl:focus {
-      outline: none;
-      border-color: var(--primary);
-      box-shadow: 0 0 0 3px rgba(27, 67, 50, 0.15);
-    }
-
-    .peak-preview-box {
-      background: var(--primary-soft);
-      border: 1px solid #cce3d8;
-      border-radius: 10px;
-      padding: 12px 14px;
-      font-size: 12px;
-      color: #1b4332;
-      margin-bottom: 16px;
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-
-    .calc-summary {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 16px;
-      align-items: center;
-      justify-content: space-between;
-      background: #f4f4f5;
-      padding: 10px 14px;
-      border-radius: 10px;
-      font-size: 13px;
-      margin-top: 14px;
-    }
-
-    /* 查詢與篩選列（含明確「查詢」按鈕） */
-    .search-bar {
-      display: grid;
-      grid-template-columns: 2fr 1fr 1fr 1fr auto auto;
-      gap: 10px;
-      align-items: center;
-    }
-    @media (max-width: 900px) {
-      .search-bar { grid-template-columns: 1fr 1fr; }
-    }
-    @media (max-width: 480px) {
-      .search-bar { grid-template-columns: 1fr; }
-    }
-
-    /* 表格樣式 */
-    .table-wrap {
-      overflow-x: auto;
-      max-height: 62vh;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 13px;
-      text-align: left;
-    }
-    thead th {
-      position: sticky;
-      top: 0;
-      z-index: 10;
-      background: #f4f6f5;
-      color: var(--text-sub);
-      font-weight: 700;
-      font-size: 12px;
-      padding: 11px 14px;
-      border-bottom: 1px solid var(--border);
-      white-space: nowrap;
-    }
-    tbody tr { border-bottom: 1px solid #f1f1f3; }
-    tbody tr:hover { background: #f8faf9; }
-    tbody tr.is-done { background: #f0fdf4; }
-    tbody tr.is-planned { background: #fffbeb; }
-    td { padding: 11px 14px; vertical-align: middle; }
-
-    .badge {
-      display: inline-block;
-      padding: 2px 9px;
-      border-radius: 99px;
-      font-size: 11px;
-      font-weight: 700;
-      white-space: nowrap;
-    }
-    .b-done { background: #dcfce7; color: #166534; }
-    .b-plan { background: #fef3c7; color: #92400e; }
-    .b-none { background: #f4f4f5; color: #71717a; }
-    .b-diff { background: #e0f2fe; color: #075985; border-radius: 6px; }
-
-    .hidden { display: none !important; }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
   </style>
 </head>
-<body>
+<body class="min-h-screen flex flex-col">
 
   <!-- 頂部導覽列 -->
-  <header class="topbar">
-    <div class="topbar-inner">
-      <div class="brand">
-        <div class="brand-logo">⛰</div>
+  <header class="bg-white/95 backdrop-blur-md border-b border-zinc-200 sticky top-0 z-30">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 py-3.5 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-[#1b4332] text-white flex items-center justify-center text-lg font-bold shadow-sm">
+          ⛰
+        </div>
         <div>
-          <div class="brand-title">台灣小百岳 100 座完登日誌</div>
-          <div class="brand-sub">官方名錄 #001–#100 • 查詢攻略與出團紀錄管理</div>
+          <div class="flex flex-wrap items-center gap-2">
+            <h1 class="text-base sm:text-lg font-bold text-zinc-900">台灣小百岳 100 座完登日誌</h1>
+            <span id="syncStatusBadge" class="inline-flex items-center gap-1.5 px-2.5 py-0.5 text-[11px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-full">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
+              就緒
+            </span>
+          </div>
+          <p id="syncSubHint" class="text-xs text-zinc-500">預設顯示已新增/完登紀錄 • 點擊「＋ 新增完登紀錄」開啟表單</p>
         </div>
       </div>
-      <div class="top-actions">
-        <button type="button" class="btn btn-accent" id="btnToggleForm">＋ 新增 / 編輯完登紀錄</button>
-        <button type="button" class="btn btn-outline" id="btnCsv">匯出 CSV</button>
-        <button type="button" class="btn btn-outline" id="btnBackup">備份 JSON</button>
-        <label class="btn btn-outline" style="margin:0;">
-          還原 JSON
-          <input type="file" id="fileRestore" accept=".json" class="hidden" />
+
+      <div class="flex flex-wrap items-center gap-2">
+        <button type="button" id="btnOpenAdd"
+          class="px-3.5 py-2 rounded-xl bg-[#1b4332] hover:bg-[#2d6a4f] text-white text-xs sm:text-sm font-semibold shadow-sm transition cursor-pointer flex items-center gap-1.5">
+          <span>＋</span> 新增完登紀錄
+        </button>
+        <button type="button" id="btnOpenCloudModal"
+          class="px-3 py-2 rounded-xl bg-white hover:bg-zinc-50 text-[#1b4332] border border-emerald-300 text-xs font-semibold transition cursor-pointer flex items-center gap-1">
+          <span>☁️</span> 多人同步設定
+        </button>
+        <button type="button" id="btnExportCsv"
+          class="px-3 py-2 rounded-xl bg-white hover:bg-zinc-50 text-zinc-700 border border-zinc-200 text-xs font-semibold transition cursor-pointer">
+          匯出 CSV
+        </button>
+        <button type="button" id="btnExportJson"
+          class="px-3 py-2 rounded-xl bg-white hover:bg-zinc-50 text-zinc-700 border border-zinc-200 text-xs font-semibold transition cursor-pointer">
+          備份
+        </button>
+        <label class="px-3 py-2 rounded-xl bg-white hover:bg-zinc-50 text-zinc-700 border border-zinc-200 text-xs font-semibold transition cursor-pointer m-0">
+          還原
+          <input type="file" id="inputImportJson" accept=".json" class="hidden" />
         </label>
       </div>
     </div>
   </header>
 
-  <main class="container">
+  <!-- 多人雲端即時同步設定視窗 -->
+  <div id="cloudModal" class="hidden fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] flex flex-col shadow-2xl overflow-hidden border border-zinc-200">
+      <div class="px-5 py-4 border-b border-zinc-200 bg-zinc-50/70 flex items-start justify-between">
+        <div>
+          <h3 class="text-base sm:text-lg font-bold text-zinc-900">多人即時雲端同步設定</h3>
+          <p class="text-xs text-zinc-500 mt-0.5">讓所有開啟連結的夥伴即時看到彼此的新增與修改</p>
+        </div>
+        <button type="button" id="btnCloseCloudModal"
+          class="px-2.5 py-1 rounded-lg bg-white border border-zinc-200 text-zinc-500 hover:text-zinc-900 text-xs font-bold cursor-pointer">
+          ✕
+        </button>
+      </div>
 
-    <!-- 操作成功提示條 -->
-    <div class="toast-banner" id="toastBanner">
-      <span id="toastMsg">✅ 已成功儲存紀錄！</span>
-      <button type="button" class="btn btn-sm btn-outline" id="btnCloseToast">關閉</button>
+      <div class="p-5 overflow-y-auto space-y-4 text-xs">
+        <div class="bg-[#f4f7f5] border border-[#e2e8e4] rounded-xl p-3.5 text-zinc-700 space-y-1.5">
+          <div class="font-bold text-[#1b4332]">如何啟用「對方也看得到即時變更」？</div>
+          <div>1. 前往 <span class="font-mono bg-white px-1.5 py-0.5 rounded border border-zinc-200">console.firebase.google.com</span> 建立免費專案，啟用 <strong>Anonymous（匿名登入）</strong> 與 <strong>Firestore Database</strong>。</div>
+          <div>2. 將專案設定 JSON 貼到下方輸入框並儲存，此瀏覽器會記住設定並立即連線同步；若要固定寫死在網頁檔內給所有人免填直接同步，可將相同 JSON 貼入程式碼 <span class="font-mono bg-white px-1 py-0.5 rounded">CUSTOM_FIREBASE_CONFIG</span>。</div>
+        </div>
+
+        <div>
+          <label for="cloudRoomInput" class="block font-semibold text-zinc-700 mb-1">共用資料表代碼（同代碼成員會看到同一份資料）</label>
+          <input type="text" id="cloudRoomInput" placeholder="例如：tw-100-peaks-team"
+            class="w-full px-3 py-2 text-xs font-mono bg-zinc-50 border border-zinc-300 rounded-xl focus:bg-white focus:outline-none focus:border-[#1b4332]" />
+        </div>
+
+        <div>
+          <label for="cloudConfigInput" class="block font-semibold text-zinc-700 mb-1">Firebase 設定（支援貼上 JSON 物件或整段設定文字）</label>
+          <textarea id="cloudConfigInput" rows="6"
+            placeholder='例如：{"apiKey":"...","authDomain":"...","projectId":"...","storageBucket":"...","messagingSenderId":"...","appId":"..."}'
+            class="w-full px-3 py-2 text-xs font-mono bg-zinc-50 border border-zinc-300 rounded-xl focus:bg-white focus:outline-none focus:border-[#1b4332]"></textarea>
+        </div>
+
+        <div id="cloudFeedbackText" class="text-xs text-zinc-500"></div>
+      </div>
+
+      <div class="px-5 py-3.5 border-t border-zinc-200 bg-zinc-50 flex items-center justify-between">
+        <button type="button" id="btnResetCloudConfig"
+          class="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-rose-600 hover:bg-rose-50 cursor-pointer">
+          清除雲端設定
+        </button>
+        <div class="flex gap-2">
+          <button type="button" id="btnCancelCloudModal"
+            class="px-3.5 py-2 rounded-xl bg-white border border-zinc-200 text-xs sm:text-sm font-semibold text-zinc-600 hover:bg-zinc-100 cursor-pointer">
+            取消
+          </button>
+          <button type="button" id="btnSaveCloudConfig"
+            class="px-4 py-2 rounded-xl bg-[#1b4332] hover:bg-[#2d6a4f] text-xs sm:text-sm font-semibold text-white cursor-pointer">
+            儲存並啟用即時同步
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 提示訊息條 -->
+  <div id="toastBanner" class="hidden fixed bottom-5 right-5 z-50 bg-zinc-900 text-white text-xs font-medium px-4 py-3 rounded-xl shadow-xl"></div>
+
+  <main class="max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 flex-1 space-y-6">
+
+    <!-- 指標卡片區 -->
+    <section class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <div class="bg-white border border-zinc-200 rounded-2xl p-4 sm:p-5 shadow-sm">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-semibold text-zinc-500">完百達成進度</span>
+          <span id="kpiRate" class="text-[11px] font-bold bg-[#e8f3ee] text-[#1b4332] px-2 py-0.5 rounded-full">0.0%</span>
+        </div>
+        <div>
+          <span id="kpiDone" class="text-2xl sm:text-3xl font-bold text-zinc-900">0</span>
+          <span class="text-xs sm:text-sm text-zinc-500 ml-1">/ 100 座</span>
+        </div>
+        <div class="w-full h-1.5 bg-zinc-200 rounded-full overflow-hidden mt-3">
+          <div id="kpiBar" class="h-full bg-[#1b4332] rounded-full transition-all duration-300" style="width: 0%"></div>
+        </div>
+      </div>
+
+      <div class="bg-white border border-zinc-200 rounded-2xl p-4 sm:p-5 shadow-sm">
+        <span class="text-xs font-semibold text-zinc-500 block mb-2">尚未完登座數</span>
+        <div>
+          <span id="kpiRemain" class="text-2xl sm:text-3xl font-bold text-zinc-900">100</span>
+          <span class="text-xs sm:text-sm text-zinc-500 ml-1">座</span>
+        </div>
+        <p class="text-[11px] text-zinc-400 mt-2.5">距離完百目標剩餘山岳</p>
+      </div>
+
+      <div class="bg-white border border-zinc-200 rounded-2xl p-4 sm:p-5 shadow-sm">
+        <span class="text-xs font-semibold text-zinc-500 block mb-2">累積攀登時數</span>
+        <div>
+          <span id="kpiHours" class="text-2xl sm:text-3xl font-bold text-zinc-900">0.0</span>
+          <span class="text-xs sm:text-sm text-zinc-500 ml-1">小時</span>
+        </div>
+        <p class="text-[11px] text-zinc-400 mt-2.5">依實際起訖時間自動加總</p>
+      </div>
+
+      <div class="bg-white border border-zinc-200 rounded-2xl p-4 sm:p-5 shadow-sm">
+        <span class="text-xs font-semibold text-zinc-500 block mb-2">累積出團人次</span>
+        <div>
+          <span id="kpiPeople" class="text-2xl sm:text-3xl font-bold text-zinc-900">0</span>
+          <span class="text-xs sm:text-sm text-zinc-500 ml-1">人次</span>
+        </div>
+        <p class="text-[11px] text-zinc-400 mt-2.5">自動計算所有出團參加者</p>
+      </div>
+    </section>
+
+    <!-- 分頁切換與操作提示 -->
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <div class="inline-flex bg-zinc-200/80 p-1 rounded-xl">
+        <button type="button" id="tabBtnList"
+          class="px-4 py-1.5 rounded-lg text-xs sm:text-sm font-semibold bg-white text-[#1b4332] shadow-sm transition cursor-pointer">
+          全台小百岳攀登紀錄
+        </button>
+        <button type="button" id="tabBtnStats"
+          class="px-4 py-1.5 rounded-lg text-xs sm:text-sm font-semibold text-zinc-600 hover:text-zinc-900 transition cursor-pointer">
+          完百進度總覽
+        </button>
+      </div>
+      <div class="flex items-center gap-3 text-xs text-zinc-500">
+        <span>💡 點擊任一列或「＋ 新增完登紀錄」即可編輯與查詢</span>
+      </div>
     </div>
 
-    <!-- 1. 總覽統計卡片 -->
-    <section class="kpi-grid">
-      <div class="kpi-card">
-        <div class="kpi-label">完百達成座數（不重複山岳）</div>
-        <div><span class="kpi-num" id="kpiDone">0</span><span class="kpi-unit">/ 100 座 (<span id="kpiPct">0.0%</span>)</span></div>
-        <div class="prog-bar"><div class="prog-fill" id="kpiBar"></div></div>
+    <!-- 視圖一：全台小百岳攀登紀錄 -->
+    <section id="viewList" class="space-y-3">
+      <!-- 搜尋與篩選列 -->
+      <div class="bg-white border border-zinc-200 rounded-2xl p-3.5 shadow-sm grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5">
+        <input type="text" id="filterSearch"
+          placeholder="搜尋山名、編號 (#034)、縣市、起登點或參加者..."
+          class="lg:col-span-2 w-full px-3.5 py-2 text-xs sm:text-sm bg-zinc-50 border border-zinc-200 rounded-xl focus:bg-white focus:outline-none focus:border-[#1b4332] transition" />
+
+        <select id="filterRegion"
+          class="w-full px-3 py-2 text-xs sm:text-sm bg-zinc-50 border border-zinc-200 rounded-xl focus:bg-white focus:outline-none focus:border-[#1b4332]">
+          <option value="ALL">所有區域 (6區)</option>
+          <option value="北部">北部</option>
+          <option value="桃竹苗">桃竹苗</option>
+          <option value="中部">中部</option>
+          <option value="南部">南部</option>
+          <option value="東部">東部</option>
+          <option value="離島">離島</option>
+        </select>
+
+        <select id="filterDiff"
+          class="w-full px-3 py-2 text-xs sm:text-sm bg-zinc-50 border border-zinc-200 rounded-xl focus:bg-white focus:outline-none focus:border-[#1b4332]">
+          <option value="ALL">所有難度等級</option>
+          <option value="低">難度：低</option>
+          <option value="低至中">難度：低至中</option>
+          <option value="中">難度：中</option>
+          <option value="中至高">難度：中至高</option>
+          <option value="高">難度：高</option>
+        </select>
+
+        <select id="filterStatus"
+          class="w-full px-3 py-2 text-xs sm:text-sm bg-zinc-50 border border-zinc-200 rounded-xl focus:bg-white focus:outline-none focus:border-[#1b4332]">
+          <option value="RECORDED">已新增/完登紀錄（預設）</option>
+          <option value="已完登">僅看已完登</option>
+          <option value="未完成">僅看未完成</option>
+          <option value="ALL">全部 100 座名錄</option>
+        </select>
       </div>
-      <div class="kpi-card">
-        <div class="kpi-label">累積攀登總時數</div>
-        <div><span class="kpi-num" id="kpiHours">0.0</span><span class="kpi-unit">小時</span></div>
-        <div class="kpi-note">依所有紀錄起訖時間自動加總</div>
+
+      <!-- 篩選計數列 -->
+      <div class="flex items-center justify-between text-xs text-zinc-500 px-1">
+        <span>顯示 <strong id="visibleCount" class="text-zinc-900">0</strong> 座小百岳（名錄共 100 座）</span>
+        <div class="flex items-center gap-3">
+          <button type="button" id="btnShowAll100" class="text-[#1b4332] font-semibold underline cursor-pointer">
+            瀏覽全部 100 座
+          </button>
+          <button type="button" id="btnResetFilter" class="hidden text-zinc-600 font-semibold underline cursor-pointer">
+            重設為預設紀錄
+          </button>
+        </div>
       </div>
-      <div class="kpi-card">
-        <div class="kpi-label">累積出團總人次</div>
-        <div><span class="kpi-num" id="kpiPeople">0</span><span class="kpi-unit">人次</span></div>
-        <div class="kpi-note">自動計算每趟參加者人數</div>
-      </div>
-      <div class="kpi-card">
-        <div class="kpi-label">已建立出團紀錄筆數</div>
-        <div><span class="kpi-num" id="kpiTripsCount">0</span><span class="kpi-unit">筆出團</span></div>
-        <div class="kpi-note">計畫中：<span id="kpiPlanned">0</span> 座</div>
-      </div>
-    </section>
 
-    <!-- 2. 新增 / 編輯完登紀錄表單面板（預設展開，方便直接操作） -->
-    <section class="card form-panel" id="recordFormSection">
-      <div class="card-header" style="background:#e9f3ee;">
-        <div>
-          <div class="card-title" id="formModeTitle">📝 新增完登 / 出團紀錄</div>
-          <div class="card-sub">請從下方下拉選單選擇山岳，填寫日期、時間、參加者與備註後按「儲存這筆紀錄」</div>
-        </div>
-        <button type="button" class="btn btn-sm btn-outline" id="btnHideForm">收合表單 ▲</button>
-      </div>
-      <div class="card-body">
-        <input type="hidden" id="editingLogId" value="" />
-
-        <!-- 步驟 A：下拉選單挑選山岳 -->
-        <div style="margin-bottom: 14px;">
-          <label class="field-label" for="selPeak">1. 選擇小百岳名稱（下拉選單，共 100 座）：</label>
-          <select id="selPeak" class="ctrl" style="font-weight: 700; font-size: 14px;"></select>
-        </div>
-
-        <!-- 該山岳攻略預覽框 -->
-        <div class="peak-preview-box" id="peakPreviewBox">
-          <div><strong id="prevTitle">#001 大屯山 (1,092m)</strong> ｜ <span id="prevCounty">台北市/新北市 (北部)</span> ｜ 難度：<strong id="prevDiff">低</strong> ｜ 預估來回：<strong id="prevEst">1.5～2 小時</strong></div>
-          <div>📍 起登點：<span id="prevTrail">鞍部停車場 / 二子坪遊客中心</span></div>
-          <div>🎒 建議裝備：<span id="prevGear">健行鞋、防風外套、水壺</span></div>
-        </div>
-
-        <!-- 步驟 B：狀態、日期、起訖時間 -->
-        <div class="form-grid-3" style="margin-bottom: 14px;">
-          <div>
-            <label class="field-label" for="inpStatus">2. 完登狀態</label>
-            <select id="inpStatus" class="ctrl">
-              <option value="已完登">✅ 已完登</option>
-              <option value="計畫中">🗓️ 計畫中</option>
-            </select>
-          </div>
-          <div>
-            <label class="field-label" for="inpDate">3. 攀登日期（點選月曆）</label>
-            <input type="date" id="inpDate" class="ctrl" />
-          </div>
-          <div class="form-grid-2" style="gap: 8px;">
-            <div>
-              <label class="field-label" for="inpStart">4. 起始時間</label>
-              <select id="inpStart" class="ctrl"></select>
-            </div>
-            <div>
-              <label class="field-label" for="inpEnd">5. 結束時間</label>
-              <select id="inpEnd" class="ctrl"></select>
-            </div>
-          </div>
-        </div>
-
-        <!-- 步驟 C：參加者、車輛接駁、備註 -->
-        <div class="form-grid-3">
-          <div>
-            <label class="field-label" for="inpParticipants">6. 參加者名單（用頓號「、」或逗號隔開）</label>
-            <input type="text" id="inpParticipants" class="ctrl" placeholder="例如：培文、Sandy、老哥、胖胖" />
-          </div>
-          <div>
-            <label class="field-label" for="inpTransport">7. 車輛 / 接駁安排</label>
-            <input type="text" id="inpTransport" class="ctrl" placeholder="例如：CR-V 自駕、苗栗出發" />
-          </div>
-          <div>
-            <label class="field-label" for="inpMemo">8. 備註 / 費用分攤與心得</label>
-            <input type="text" id="inpMemo" class="ctrl" placeholder="例如：油資均攤、山頂展望極佳" />
-          </div>
-        </div>
-
-        <!-- 自動計算總耗時與人數預覽 + 儲存按鈕 -->
-        <div class="calc-summary">
-          <div>
-            ⏱️ 自動計算總耗時：<strong id="calcHoursText" style="color:var(--primary);">尚未選擇起訖時間</strong>
-            <span style="margin: 0 10px; color:#d4d4d8;">|</span>
-            👥 自動計算參加人數：<strong id="calcPeopleText" style="color:var(--primary);">0 人</strong>
-          </div>
-          <div style="display:flex; gap:8px;">
-            <button type="button" class="btn btn-outline" id="btnResetForm">清空重填</button>
-            <button type="button" class="btn btn-primary" id="btnSaveLog">💾 儲存這筆紀錄</button>
-          </div>
+      <!-- 主表格 -->
+      <div class="bg-white border border-zinc-200 rounded-2xl overflow-hidden shadow-sm">
+        <div class="overflow-x-auto max-h-[65vh]">
+          <table class="w-full border-collapse text-left text-xs sm:text-sm">
+            <thead>
+              <tr class="bg-zinc-100/90 text-zinc-600 font-semibold text-xs border-b border-zinc-200 sticky top-0 z-10">
+                <th class="py-3 px-3.5 whitespace-nowrap">編號</th>
+                <th class="py-3 px-3.5 whitespace-nowrap">小百岳與起登點</th>
+                <th class="py-3 px-3.5 whitespace-nowrap hidden sm:table-cell">縣市 / 區域</th>
+                <th class="py-3 px-3.5 text-center whitespace-nowrap">難度</th>
+                <th class="py-3 px-3.5 text-center whitespace-nowrap hidden md:table-cell">預估耗時</th>
+                <th class="py-3 px-3.5 text-center whitespace-nowrap">狀態</th>
+                <th class="py-3 px-3.5 whitespace-nowrap hidden lg:table-cell">攀登日期與時間</th>
+                <th class="py-3 px-3.5 whitespace-nowrap hidden xl:table-cell">參加者 / 備註</th>
+                <th class="py-3 px-3.5 text-right whitespace-nowrap">操作</th>
+              </tr>
+            </thead>
+            <tbody id="tableBody" class="divide-y divide-zinc-100"></tbody>
+          </table>
         </div>
       </div>
     </section>
 
-    <!-- 3. 新增完成的資料檢視區（獨立顯示區，儲存後立刻出現在這裡！） -->
-    <section class="card" id="myLogsSection">
-      <div class="card-header">
-        <div>
-          <div class="card-title">✅ 我的已完登 / 出團紀錄明細（新增資料顯示區）</div>
-          <div class="card-sub">您新增或儲存的所有攀登紀錄都會集中顯示在此表格，並自動同步標記下方 100 座總表</div>
+    <!-- 視圖二：完百進度總覽 -->
+    <section id="viewStats" class="hidden space-y-5">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="bg-white border border-zinc-200 rounded-2xl p-5 shadow-sm">
+          <h3 class="text-sm font-bold text-zinc-900 mb-4">各區域完登進度</h3>
+          <div id="statsRegionBody" class="space-y-3.5"></div>
         </div>
-        <span class="badge b-done" id="myLogsCountBadge">目前共 0 筆紀錄</span>
-      </div>
-      <div class="table-wrap" style="max-height: 45vh;">
-        <table>
-          <thead>
-            <tr>
-              <th>編號 / 山名</th>
-              <th>狀態</th>
-              <th>攀登日期</th>
-              <th>起訖時間</th>
-              <th>總耗時</th>
-              <th>參加者名單 (人數)</th>
-              <th>車輛 / 接駁</th>
-              <th>備註 / 心得</th>
-              <th style="text-align:right;">管理</th>
-            </tr>
-          </thead>
-          <tbody id="myLogsTableBody"></tbody>
-        </table>
-      </div>
-    </section>
-
-    <!-- 4. 全台 100 座小百岳資料庫與查詢區（含明確「🔍 查詢」按鈕） -->
-    <section class="card">
-      <div class="card-header">
-        <div>
-          <div class="card-title">⛰️ 全台 100 座小百岳資料庫與查詢</div>
-          <div class="card-sub">輸入關鍵字或選擇篩選條件後，點擊右側「🔍 查詢」按鈕即可過濾清單</div>
-        </div>
-        <span style="font-size:12px; color:var(--text-muted);">目前顯示：<strong id="dbVisibleCount" style="color:var(--text-main);">100</strong> / 100 座</span>
-      </div>
-
-      <div class="card-body" style="padding-bottom: 12px; border-bottom: 1px solid var(--border); background:#fafafa;">
-        <div class="search-bar">
-          <input type="text" id="qKeyword" class="ctrl" placeholder="輸入山名（如：加里山）、編號（#034）、縣市或起登點..." />
-          <select id="qRegion" class="ctrl">
-            <option value="ALL">所有區域 (6區)</option>
-            <option value="北部">北部</option>
-            <option value="桃竹苗">桃竹苗</option>
-            <option value="中部">中部</option>
-            <option value="南部">南部</option>
-            <option value="東部">東部</option>
-            <option value="離島">離島</option>
-          </select>
-          <select id="qDiff" class="ctrl">
-            <option value="ALL">所有難度</option>
-            <option value="低">難度：低</option>
-            <option value="低至中">難度：低至中</option>
-            <option value="中">難度：中</option>
-            <option value="中至高">難度：中至高</option>
-            <option value="高">難度：高</option>
-          </select>
-          <select id="qStatus" class="ctrl">
-            <option value="ALL">所有狀態</option>
-            <option value="已完登">已完登</option>
-            <option value="計畫中">計畫中</option>
-            <option value="未完成">未完成</option>
-          </select>
-          <button type="button" class="btn btn-primary" id="btnDoSearch">🔍 查詢</button>
-          <button type="button" class="btn btn-outline" id="btnClearSearch">重設</button>
+        <div class="bg-white border border-zinc-200 rounded-2xl p-5 shadow-sm">
+          <h3 class="text-sm font-bold text-zinc-900 mb-4">各難度等級分布</h3>
+          <div id="statsDiffBody" class="space-y-3.5"></div>
         </div>
       </div>
 
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>編號</th>
-              <th>小百岳名稱 (海拔)</th>
-              <th>行政縣市 / 區域</th>
-              <th>難度</th>
-              <th>預估耗時</th>
-              <th>常用起登點</th>
-              <th>核心裝備</th>
-              <th>完登狀態</th>
-              <th style="text-align:right;">快速紀錄</th>
-            </tr>
-          </thead>
-          <tbody id="peaksDbTableBody"></tbody>
-        </table>
+      <div class="bg-white border border-zinc-200 rounded-2xl overflow-hidden shadow-sm">
+        <div class="px-5 py-4 border-b border-zinc-200 flex flex-wrap justify-between items-center gap-2">
+          <div>
+            <h3 class="text-sm font-bold text-zinc-900">已完登與出團紀錄明細</h3>
+            <p class="text-xs text-zinc-500 mt-0.5">自動彙整所有已完登或已填寫出團資訊的山岳</p>
+          </div>
+          <button type="button" id="btnOpenAdd2"
+            class="px-3 py-1.5 rounded-lg bg-[#1b4332] hover:bg-[#2d6a4f] text-white text-xs font-semibold cursor-pointer">
+            ＋ 新增完登紀錄
+          </button>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full border-collapse text-left text-xs sm:text-sm">
+            <thead>
+              <tr class="bg-zinc-50 text-zinc-600 font-semibold text-xs border-b border-zinc-200">
+                <th class="py-3 px-4 whitespace-nowrap">編號 / 山名</th>
+                <th class="py-3 px-4 text-center whitespace-nowrap">狀態</th>
+                <th class="py-3 px-4 text-center whitespace-nowrap">攀登日期</th>
+                <th class="py-3 px-4 text-center whitespace-nowrap">起訖時間 (實際耗時)</th>
+                <th class="py-3 px-4 whitespace-nowrap">參加者名單 (人數)</th>
+                <th class="py-3 px-4 whitespace-nowrap">車輛接駁與費用/心得</th>
+              </tr>
+            </thead>
+            <tbody id="tripListBody" class="divide-y divide-zinc-100"></tbody>
+          </table>
+        </div>
       </div>
     </section>
 
   </main>
 
-  <script>
-    var PEAKS_DB = [{"id": 1, "code": "#001", "name": "大屯山", "elev": 1092, "county": "台北市/新北市", "region": "北部", "diff": "低", "estTime": "1.5～2 小時", "trailhead": "鞍部停車場 / 二子坪遊客中心", "gear": "健行鞋、防風外套、水壺", "note": "石階與車道為主，稜線風大易起霧，秋冬芒草季極美"}, {"id": 2, "code": "#002", "name": "七星山", "elev": 1120, "county": "台北市", "region": "北部", "diff": "低至中", "estTime": "2.5～3.5 小時", "trailhead": "冷水坑 / 小油坑登山口", "gear": "健行鞋、防風雨外套、登山杖", "note": "台北市最高峰，全線石階陡上，硫磺噴氣孔景觀特殊"}, {"id": 3, "code": "#003", "name": "大武崙山", "elev": 231, "county": "基隆市", "region": "北部", "diff": "低", "estTime": "0.5～1 小時", "trailhead": "大武崙砲台停車場", "gear": "輕便運動鞋、水壺", "note": "老少咸宜親子步道，可俯瞰外木山海岸與基隆嶼"}, {"id": 4, "code": "#004", "name": "槓子寮山", "elev": 163, "county": "基隆市", "region": "北部", "diff": "低", "estTime": "0.5～1 小時", "trailhead": "立德路槓子寮砲台停車場", "gear": "輕便運動鞋、防蚊液", "note": "緊鄰國定古蹟槓子寮砲台，視野開闊眺望八斗子漁港"}, {"id": 5, "code": "#005", "name": "觀音山", "elev": 616, "county": "新北市", "region": "北部", "diff": "低至中", "estTime": "1.5～2.5 小時", "trailhead": "凌雲禪寺硬漢嶺登山口", "gear": "健行鞋、登山杖、飲水", "note": "「硬漢嶺」連續石階考驗腳力，山頂展望淡水河口絕佳"}, {"id": 6, "code": "#006", "name": "基隆山", "elev": 588, "county": "新北市", "region": "北部", "diff": "低至中", "estTime": "1.5～2 小時", "trailhead": "九份隔頂登山口", "gear": "健行鞋、防曬帽、充足飲水", "note": "全線無遮蔽石階陡上，360度俯瞰九份山城與陰陽海"}, {"id": 7, "code": "#007", "name": "紅淡山", "elev": 210, "county": "基隆市", "region": "北部", "diff": "低", "estTime": "1～1.5 小時", "trailhead": "南榮路寶明寺登山口", "gear": "輕便健行鞋、防蚊液", "note": "基隆市區後花園，步道四通八達、林蔭茂密"}, {"id": 8, "code": "#008", "name": "大崙頭山", "elev": 478, "county": "台北市", "region": "北部", "diff": "低", "estTime": "1.5～2 小時", "trailhead": "碧山巖 / 翠山步道入口", "gear": "輕便健行鞋、水壺", "note": "內湖最高峰，木棧道與石階完善，乘風堡觀景台視野佳"}, {"id": 9, "code": "#009", "name": "劍潭山", "elev": 153, "county": "台北市", "region": "北部", "diff": "低", "estTime": "1.5～2 小時", "trailhead": "捷運劍潭站登山口", "gear": "運動休閒鞋、水壺", "note": "捷運可達，老地方觀景平台可賞松山機場飛機起降與101"}, {"id": 10, "code": "#010", "name": "五分山", "elev": 757, "county": "新北市", "region": "北部", "diff": "低至中", "estTime": "2.5～3.5 小時", "trailhead": "十分台灣煤礦博物館 / 氣象雷達站", "gear": "健行鞋、防風外套、登山杖", "note": "稜線步道宛如萬里長城，氣象雷達站白球為著名地標"}, {"id": 11, "code": "#011", "name": "姜子寮山", "elev": 729, "county": "基隆市", "region": "北部", "diff": "低", "estTime": "1.5～2 小時", "trailhead": "泰安瀑布 / 姜子寮山停車場", "gear": "健行鞋、登山杖", "note": "全線枕木階梯好走，山頂設四座觀景台擁有360度無敵視野"}, {"id": 12, "code": "#012", "name": "大尖山", "elev": 460, "county": "新北市", "region": "北部", "diff": "低至中", "estTime": "1.5～2.5 小時", "trailhead": "汐止天秀宮登山口", "gear": "健行鞋、登山杖", "note": "石階陡峭直上，山頂視野涵蓋大台北盆地與基隆嶼"}, {"id": 13, "code": "#013", "name": "南港山", "elev": 375, "county": "台北市", "region": "北部", "diff": "低至中", "estTime": "2～3 小時", "trailhead": "象山捷運站 / 慈惠堂登山口", "gear": "健行鞋、手套(若走攀岩線)", "note": "四獸山最高峰，九五峰巨石與101夜景極具代表性"}, {"id": 14, "code": "#014", "name": "土庫岳 (大坪山)", "elev": 389, "county": "新北市", "region": "北部", "diff": "低", "estTime": "1.5～2 小時", "trailhead": "深坑大坪街 / 南港舊莊更寮古道", "gear": "健行鞋、防蚊液", "note": "百年古道幽靜涼爽，山頂有一等三角點與涼亭"}, {"id": 15, "code": "#015", "name": "大棟山", "elev": 405, "county": "新北市/桃園市", "region": "桃竹苗", "diff": "低", "estTime": "1.5～2.5 小時", "trailhead": "405高地直達 / 大同山青龍嶺連走", "gear": "輕便健行鞋、防曬水壺", "note": "405高地可直接車抵三角點旁；連走步道則為林蔭土徑"}, {"id": 16, "code": "#016", "name": "南勢角山", "elev": 302, "county": "新北市", "region": "北部", "diff": "低", "estTime": "1.5～2 小時", "trailhead": "中和烘爐地南山福德宮", "gear": "運動健行鞋、水壺", "note": "結合烘爐地土地公廟參拜，稜線步道平緩輕鬆"}, {"id": 17, "code": "#017", "name": "二格山 (石尖山)", "elev": 678, "county": "台北市/新北市", "region": "北部", "diff": "低", "estTime": "1.5～2 小時", "trailhead": "草湳大榕樹 / 北宜公路二格公園", "gear": "健行鞋、登山杖", "note": "木棧階梯與原始山徑交錯，觀景台可眺望翡翠水庫"}, {"id": 18, "code": "#018", "name": "天上山 (內坡山)", "elev": 430, "county": "新北市", "region": "北部", "diff": "低", "estTime": "1.5～2.5 小時", "trailhead": "土城承天禪寺 / 桐花公園", "gear": "健行鞋、防蚊液", "note": "土城山系最高峰，四五月桐花季雪白花毯極具人氣"}, {"id": 19, "code": "#019", "name": "福德坑山 (鳶山)", "elev": 321, "county": "新北市", "region": "北部", "diff": "低至中", "estTime": "1.5～2.5 小時", "trailhead": "三峽鳶山大鐘 / 茅埔路登山口", "gear": "抓地健行鞋、手套", "note": "官方名單稱鳶山，基點在福德坑山；鳶山彩壁與岩稜需留意安全"}, {"id": 20, "code": "#020", "name": "獅仔頭山", "elev": 858, "county": "新北市", "region": "北部", "diff": "中", "estTime": "2.5～3.5 小時", "trailhead": "新店獅頭山登山口", "gear": "抓地登山鞋、耐磨手套、登山杖", "note": "著名近90度木造崖梯攀爬，兼顧古戰場歷史遺跡與原始林相"}, {"id": 21, "code": "#021", "name": "金面山", "elev": 667, "county": "桃園市", "region": "桃竹苗", "diff": "中", "estTime": "2.5～3.5 小時", "trailhead": "大溪第三登山口 (阮家土雞城)", "gear": "抓地登山鞋、手套、登山杖", "note": "鳥嘴尖至主峰有大落差巨石拉繩與樹根路，雨後泥濘濕滑"}, {"id": 22, "code": "#022", "name": "東眼山", "elev": 1212, "county": "桃園市/新北市", "region": "桃竹苗", "diff": "低", "estTime": "2～2.5 小時", "trailhead": "東眼山森林遊樂區遊客中心", "gear": "慢跑鞋/一般登山鞋、水壺", "note": "自導式步道木棧道與碎石階梯完善，柳杉林芬多精豐富"}, {"id": 23, "code": "#023", "name": "溪洲山", "elev": 577, "county": "桃園市", "region": "桃竹苗", "diff": "低至中", "estTime": "3～4 小時", "trailhead": "坪林收費站 / 苗圃登山口", "gear": "健行鞋、登山杖、防蚊防曬", "note": "鄰近石門水庫，前段爬升坡度稍陡，稜線叉路多需留意路標"}, {"id": 24, "code": "#024", "name": "石門山 (小竹坑山)", "elev": 551, "county": "桃園市", "region": "桃竹苗", "diff": "低", "estTime": "1.5～2.5 小時", "trailhead": "勞工育樂中心 / 北端登山口", "gear": "健行鞋、登山杖、基礎飲水", "note": "大眾化熱門郊山，好漢坡路段較陡需微拉繩，其餘路徑平緩"}, {"id": 25, "code": "#025", "name": "石牛山", "elev": 671, "county": "桃園市/新竹縣", "region": "桃竹苗", "diff": "中", "estTime": "2.5～3.5 小時", "trailhead": "關西石福宮登山口 (O型環狀)", "gear": "抓地防滑鞋、耐磨手套、登山杖", "note": "左線水路需過溪踩石，後段有垂直岩壁拉繩與狹窄石洞"}, {"id": 26, "code": "#026", "name": "十八尖山", "elev": 132, "county": "新竹市", "region": "桃竹苗", "diff": "低", "estTime": "1～1.5 小時", "trailhead": "博愛街 / 寶山路登山口", "gear": "運動休閒鞋、水壺", "note": "新竹市區都會森林公園，全線柏油路與平緩階梯"}, {"id": 27, "code": "#027", "name": "中坑山 (飛鳳山)", "elev": 462, "county": "新竹縣", "region": "桃竹苗", "diff": "低", "estTime": "2～2.5 小時", "trailhead": "感應橋 / 觀日坪古道O型", "gear": "健行鞋、登山杖", "note": "小百岳基點位於中坑山，觀日亭晴天可遠眺台北101"}, {"id": 28, "code": "#028", "name": "李棟山 (李崠山)", "elev": 1914, "county": "新竹縣/桃園市", "region": "桃竹苗", "diff": "低至中", "estTime": "1.5～2.5 小時", "trailhead": "李棟山莊登山口 (新舊路)", "gear": "登山鞋、防風保暖外套、登山杖", "note": "山頂有歷史古堡遺跡，海拔近2000m秋冬氣溫偏低"}, {"id": 29, "code": "#029", "name": "獅頭山", "elev": 492, "county": "苗栗縣/新竹縣", "region": "桃竹苗", "diff": "低", "estTime": "1.5～2 小時", "trailhead": "獅尾遊客中心 / 勸化堂停車場", "gear": "健行鞋、水壺", "note": "橫跨南庄與峨眉，寺廟古道群環繞，石階平緩安全"}, {"id": 30, "code": "#030", "name": "五指山", "elev": 1062, "county": "新竹縣", "region": "桃竹苗", "diff": "中", "estTime": "3～4 小時", "trailhead": "灶君堂 / 玉皇宮登山口", "gear": "中筒登山鞋、雙登山杖、手套", "note": "連峰上下起伏大、連續木棧階梯與樹根交錯（全連峰約5-6.5h）"}, {"id": 31, "code": "#031", "name": "鵝公髻山", "elev": 1579, "county": "新竹縣/苗栗縣", "region": "桃竹苗", "diff": "中", "estTime": "3.5～5 小時", "trailhead": "上山人家東北峰口 / 五峰第一登山口", "gear": "登山鞋、登山杖、手套、離線地圖", "note": "柳杉林幽美，後段登頂坡度陡峭多泥濘樹根，雨後易滑"}, {"id": 32, "code": "#032", "name": "向天湖山", "elev": 1225, "county": "苗栗縣", "region": "桃竹苗", "diff": "中", "estTime": "3～3.5 小時", "trailhead": "南庄向天湖停車場 (可連走光天高山)", "gear": "抓地登山鞋、登山杖、手套、保暖層", "note": "杉木林潮濕多霧，石塊易長青苔濕滑，局部路段需拉繩"}, {"id": 33, "code": "#033", "name": "仙山 (紅毛館山)", "elev": 967, "county": "苗栗縣", "region": "桃竹苗", "diff": "中", "estTime": "1.5～2 小時", "trailhead": "獅潭靈洞宮登山口", "gear": "抓地力佳登山鞋、耐磨手套", "note": "過望陽亭後為近垂直裸岩瘦稜拉繩攀爬，暴露感重"}, {"id": 34, "code": "#034", "name": "加里山", "elev": 2220, "county": "苗栗縣", "region": "桃竹苗", "diff": "高", "estTime": "6～7.5 小時", "trailhead": "南庄鹿場登山口 / 大坪林道", "gear": "中高筒登山鞋、頭燈、手套、防風雨衣", "note": "中級山之珠，落差近千米，後段巨石樹根拉繩攀爬，午後易起霧"}, {"id": 35, "code": "#035", "name": "火炎山", "elev": 596, "county": "苗栗縣", "region": "桃竹苗", "diff": "低至中", "estTime": "3～3.5 小時", "trailhead": "三義台13線55.3K登山口 (O型)", "gear": "刻紋深健行鞋、登山杖、防曬、充足水", "note": "礫石惡地地質鬆動嚴禁靠近崖邊，無遮蔽處防曬極重要"}, {"id": 36, "code": "#036", "name": "關刀山", "elev": 889, "county": "苗栗縣", "region": "桃竹苗", "diff": "低", "estTime": "1～1.5 小時", "trailhead": "三義苗56鄉道第一登山口", "gear": "健行鞋、登山杖", "note": "出關古道聖關段林蔭原始幽靜，坡度平緩親民"}, {"id": 37, "code": "#037", "name": "馬那邦山", "elev": 1407, "county": "苗栗縣", "region": "桃竹苗", "diff": "低至中", "estTime": "3～4 小時", "trailhead": "大湖珠湖 / 上湖 / 天然湖登山口", "gear": "健行鞋/登山鞋、登山杖、防風外套", "note": "秋冬著名賞楓勝地，古戰場遺跡與石門景觀極具特色"}, {"id": 38, "code": "#038", "name": "鐵砧山", "elev": 236, "county": "台中市", "region": "中部", "diff": "低", "estTime": "0.5～1 小時", "trailhead": "大甲鐵砧山雕塑公園", "gear": "輕便運動鞋、水壺", "note": "三角點位於公園旁平緩易達，順遊劍井與永信運動公園"}, {"id": 39, "code": "#039", "name": "稍來山", "elev": 2307, "county": "台中市", "region": "中部", "diff": "低至中", "estTime": "2.5～3.5 小時", "trailhead": "大雪山林道30.5K / 35K收費站", "gear": "登山鞋、防風保暖衣物、登山杖", "note": "秋末台灣紅榨槭紅葉絕美，山頂瞭望台視野極佳"}, {"id": 40, "code": "#040", "name": "聚興山", "elev": 500, "county": "台中市", "region": "中部", "diff": "低", "estTime": "2～2.5 小時", "trailhead": "潭子新田登山步道停車場 (O型)", "gear": "一般健行鞋、登山杖", "note": "木棧道與枕木階梯完善，登頂段有短暫原始山徑，可俯瞰台中盆地"}, {"id": 41, "code": "#041", "name": "頭嵙山", "elev": 859, "county": "台中市", "region": "中部", "diff": "低至中", "estTime": "3～4 小時", "trailhead": "大坑1～5號 / 5-1號步道起登", "gear": "抓地健行鞋、防滑手套、登山杖", "note": "台中最高峰，圓木棧道沿稜線起伏，考驗平衡感與肌耐力"}, {"id": 42, "code": "#042", "name": "南觀音山 (觀音山)", "elev": 318, "county": "台中市", "region": "中部", "diff": "低", "estTime": "1.5～2 小時", "trailhead": "北屯大坑橋旁南觀音山登山口", "gear": "輕便健行鞋、水壺", "note": "樹蔭遮蔽高、階梯與土徑交錯，山頂巨大金色觀音像醒目"}, {"id": 43, "code": "#043", "name": "三汀山", "elev": 480, "county": "台中市", "region": "中部", "diff": "低", "estTime": "1.5～2 小時", "trailhead": "太平咬人狗坑生態景觀步道", "gear": "健行鞋、防蚊液、水壺", "note": "望高寮觀景台可眺望頭汴坑溪與台中市區夕陽"}, {"id": 44, "code": "#044", "name": "暗影山 (酒桶山)", "elev": 997, "county": "台中市", "region": "中部", "diff": "低至中", "estTime": "2～2.5 小時", "trailhead": "太平酒桶山法蝶 / 產業道路登山口", "gear": "抓地登山鞋、手套、登山杖", "note": "山頂前有大岩壁拉繩段，展望中央山脈與台中盆地"}, {"id": 45, "code": "#045", "name": "大橫屏山", "elev": 1206, "county": "台中市/南投縣", "region": "中部", "diff": "中至高", "estTime": "5～6.5 小時", "trailhead": "國姓長流 / 太平碧山農場登山口", "gear": "中高筒登山鞋、手套、頭燈、離線地圖", "note": "山勢如屏風橫亙，路徑原始陡峭、芒草與拉繩多，具一定挑戰度"}, {"id": 46, "code": "#046", "name": "阿罩霧山", "elev": 249, "county": "台中市", "region": "中部", "diff": "低", "estTime": "1～1.5 小時", "trailhead": "霧峰樟公巷 / 中心瓏步道", "gear": "輕便運動鞋、防蚊液", "note": "穿過大片鳳梨田與荔枝園，路線平緩適合親子健行"}, {"id": 47, "code": "#047", "name": "九份二山", "elev": 1174, "county": "南投縣", "region": "中部", "diff": "低", "estTime": "1.5～2 小時", "trailhead": "國姓龍南道路登山口", "gear": "健行鞋、防蚊液、水壺", "note": "921地震國家紀念地，順遊傾斜屋與堰塞湖景觀"}, {"id": 48, "code": "#048", "name": "橫山", "elev": 443, "county": "南投縣/彰化縣", "region": "中部", "diff": "低", "estTime": "1～1.5 小時", "trailhead": "八卦山脈139縣道橫山賞鷹平台", "gear": "輕便健行鞋、防曬水壺", "note": "八卦山脈最高峰，春季為灰面鵟鷹過境賞鷹熱點"}, {"id": 49, "code": "#049", "name": "貓囒山", "elev": 1016, "county": "南投縣", "region": "中部", "diff": "低", "estTime": "1.5～2 小時", "trailhead": "魚池明潭國中旁茶業改良場入口", "gear": "運動健行鞋、水壺", "note": "沿途經過日式宿舍、阿薩姆紅茶園與錫蘭橄欖樹大道，俯瞰日月潭"}, {"id": 50, "code": "#050", "name": "集集大山", "elev": 1392, "county": "南投縣", "region": "中部", "diff": "低", "estTime": "0.5～1 小時", "trailhead": "車輛可直達山頂電視轉播站旁", "gear": "輕便外套、水壺", "note": "車行可直達三角點（若從集集市區徒步踢林道則需約6-7小時）"}, {"id": 51, "code": "#051", "name": "松柏坑山 (獅子頭山)", "elev": 431, "county": "彰化縣/南投縣", "region": "中部", "diff": "低", "estTime": "0.5～1 小時", "trailhead": "名間松柏嶺受天宮旁茶園", "gear": "輕便休閒鞋", "note": "位於茶園之中的三角點，幾乎無爬升，順遊松柏嶺步道"}, {"id": 52, "code": "#052", "name": "後尖山", "elev": 1008, "county": "南投縣", "region": "中部", "diff": "低至中", "estTime": "2～2.5 小時", "trailhead": "魚池頭社佛堂 / 慈恩塔步道", "gear": "健行鞋、登山杖", "note": "日月潭四兄妹之一，後段連續木階梯陡上，林相優美"}, {"id": 53, "code": "#053", "name": "鳳凰山", "elev": 1698, "county": "南投縣", "region": "中部", "diff": "中", "estTime": "4～5 小時", "trailhead": "溪頭自然教育園區天文台路線", "gear": "中筒登山鞋、登山杖、防風雨衣", "note": "沿稜線竹林與柳杉林起伏，潮濕多霧石階易滑"}, {"id": 54, "code": "#054", "name": "金柑樹山", "elev": 2091, "county": "南投縣", "region": "中部", "diff": "中", "estTime": "4.5～5.5 小時", "trailhead": "杉林溪藥花園 / 忘憂森林路線", "gear": "登山鞋、登山杖、保暖防風衣", "note": "可順遊忘憂森林與嶺頭山，高海拔雲霧繚繞氣候涼爽"}, {"id": 55, "code": "#055", "name": "石壁山", "elev": 1751, "county": "雲林縣/嘉義縣", "region": "中部", "diff": "低至中", "estTime": "2.5～3.5 小時", "trailhead": "古坑草嶺石壁九芎神木 / 嘉南雲峰連走", "gear": "登山鞋、登山杖、保暖衣物", "note": "孟宗竹林秘境「五元兩角」附近，生態豐富空氣清新"}, {"id": 56, "code": "#056", "name": "大尖山", "elev": 1305, "county": "雲林縣/嘉義縣", "region": "中部", "diff": "低至中", "estTime": "2.5～3.5 小時", "trailhead": "古坑華山教育農園 / 梅山二尖山步道", "gear": "健行鞋、登山杖、防曬", "note": "穿梭茶園與竹林木棧道，雲嘉平原夜景與雲海一覽無遺"}, {"id": 57, "code": "#057", "name": "梨子腳山 (祝壽山)", "elev": 1176, "county": "嘉義縣", "region": "南部", "diff": "低", "estTime": "1.5～2 小時", "trailhead": "梅山太平雲梯 / 三元宮茶園步道", "gear": "健行鞋、防曬帽、水壺", "note": "漫步翠綠茶園稜線，可順遊太平雲梯與太平老街"}, {"id": 58, "code": "#058", "name": "獨立山", "elev": 840, "county": "嘉義縣", "region": "南部", "diff": "低", "estTime": "2～2.5 小時", "trailhead": "竹崎樟腦寮車站 (O型環狀)", "gear": "健行鞋、登山杖、防蚊液", "note": "全台唯一與阿里山森林鐵道螺旋環繞交會的經典步道"}, {"id": 59, "code": "#059", "name": "大塔山", "elev": 2664, "county": "嘉義縣/南投縣", "region": "南部", "diff": "中", "estTime": "3.5～4.5 小時", "trailhead": "阿里山森林遊樂區沼平車站 → 塔山步道", "gear": "登山鞋、保暖外套、登山杖、充足水", "note": "全台小百岳最高峰，巨木群與大塔山斷崖雲海氣勢磅礴"}, {"id": 60, "code": "#060", "name": "大凍山 (糞箕山)", "elev": 1976, "county": "嘉義縣", "region": "南部", "diff": "低至中", "estTime": "2.5～3.5 小時", "trailhead": "奮起湖多林停車場 (O型環狀)", "gear": "登山鞋、防風保暖衣、登山杖", "note": "阿里山脈著名觀日出雲海勝地，柳杉林與竹林步道完善"}, {"id": 61, "code": "#061", "name": "大湖尖山", "elev": 1316, "county": "嘉義縣", "region": "南部", "diff": "低至中", "estTime": "2～2.5 小時", "trailhead": "番路大湖村文峰遊客中心 / 尖山步道", "gear": "健行鞋、登山杖", "note": "數千階木棧道與石階直上稜線，視野遠眺仁義潭與嘉南平原"}, {"id": 62, "code": "#062", "name": "紅毛埤山", "elev": 150, "county": "嘉義市", "region": "南部", "diff": "低", "estTime": "0.5 小時", "trailhead": "嘉義市蘭潭後山步道 / 崇仁護校旁", "gear": "輕便運動鞋、防蚊液", "note": "嘉義市唯一小百岳，緊鄰蘭潭風景區，輕鬆散步可達"}, {"id": 63, "code": "#063", "name": "大棟山", "elev": 1241, "county": "台南市/嘉義縣", "region": "南部", "diff": "低至中", "estTime": "2.5～3.5 小時", "trailhead": "白河關子嶺仙祖廟登山口", "gear": "健行鞋、登山杖、飲水", "note": "台南市最高峰，沿途多為產業道路與石階，可順遊關子嶺溫泉"}, {"id": 64, "code": "#064", "name": "崁頭山", "elev": 844, "county": "台南市", "region": "南部", "diff": "低", "estTime": "1.5～2 小時", "trailhead": "東山孚佑宮仙公廟登山口", "gear": "健行鞋、登山杖", "note": "步道設施完善，山頂巨石群「情人石」展望嘉南平原極佳"}, {"id": 65, "code": "#065", "name": "三腳南山", "elev": 1186, "county": "嘉義縣/台南市", "region": "南部", "diff": "中", "estTime": "3.5～4.5 小時", "trailhead": "楠西梅嶺福來百年老梅園登山口", "gear": "抓地登山鞋、耐磨手套、登山杖", "note": "後段為陡峭岩壁與拉繩攀爬地形，挑戰性高、視野絕佳"}, {"id": 66, "code": "#066", "name": "西阿里關山", "elev": 973, "county": "台南市/高雄市", "region": "南部", "diff": "低", "estTime": "1.5～2 小時", "trailhead": "南化關山里產業道路登山口", "gear": "健行鞋、防蚊液", "note": "地處偏遠幽靜，部分路線為果園產業道路接原始山徑"}, {"id": 67, "code": "#067", "name": "竹子尖山", "elev": 1110, "county": "台南市", "region": "南部", "diff": "低至中", "estTime": "2.5～3 小時", "trailhead": "楠西梅嶺伍龍步道 / 梅峰古道O型", "gear": "健行鞋、登山杖、水壺", "note": "冬季梅花盛開時滿山雪白，稜線可俯瞰曾文水庫全景"}, {"id": 68, "code": "#068", "name": "藤枝山", "elev": 1565, "county": "高雄市", "region": "南部", "diff": "低", "estTime": "1.5～2 小時", "trailhead": "藤枝國家森林遊樂區雲杉步道", "gear": "健行鞋、薄保暖外套", "note": "南台灣避暑勝地，高聳柳杉與牛樟林立，瞭望台視野遼闊"}, {"id": 69, "code": "#069", "name": "白雲山 (廓亭山)", "elev": 1044, "county": "高雄市", "region": "南部", "diff": "中", "estTime": "3.5～4.5 小時", "trailhead": "甲仙四德巷產業道路登山口", "gear": "登山鞋、登山杖、手套、離線地圖", "note": "路徑較原始且少人走，沿途竹林與雜木林交錯"}, {"id": 70, "code": "#070", "name": "刣牛湖山", "elev": 798, "county": "台南市/高雄市", "region": "南部", "diff": "低", "estTime": "1.5～2 小時", "trailhead": "南化烏山健康步道 / 龍湖寺", "gear": "健行鞋、登山杖、防曬", "note": "烏山稜線步道視野開闊，可遠眺南化水庫與高屏溪谷"}, {"id": 71, "code": "#071", "name": "鳴海山", "elev": 1411, "county": "高雄市", "region": "南部", "diff": "中", "estTime": "4～5 小時", "trailhead": "茂林多納林道登山口 (經網子山)", "gear": "登山鞋、登山杖、防螞蝗襪/噴霧", "note": "日治時期警備道遺跡豐富，原始森林生態完整"}, {"id": 72, "code": "#072", "name": "旗尾山", "elev": 315, "county": "高雄市", "region": "南部", "diff": "低至中", "estTime": "1.5～2 小時", "trailhead": "旗山第一/第三登山口 (旗靈縱走起點)", "gear": "抓地健行鞋、手套、充足飲水", "note": "千階天梯陡上與裸岩瘦稜極具特色，山頂祠堂俯瞰美濃平原"}, {"id": 73, "code": "#073", "name": "尾寮山", "elev": 1427, "county": "屏東縣/高雄市", "region": "南部", "diff": "中至高", "estTime": "6～7.5 小時", "trailhead": "茂林大津橋登山口 (單程9.3K)", "gear": "中高筒登山鞋、雙登山杖、1.5L以上水", "note": "南部知名百岳行前體能訓練場，長距離連續爬升超過1,300m"}, {"id": 74, "code": "#074", "name": "大崗山", "elev": 312, "county": "高雄市", "region": "南部", "diff": "低", "estTime": "1.5～2 小時", "trailhead": "阿蓮超峰寺 / 大崗山生態園區", "gear": "輕便健行鞋、防蚊液", "note": "特殊高位珊瑚礁石灰岩地質，擁有豐富一線天與鐘乳石洞景觀"}, {"id": 75, "code": "#075", "name": "觀音山", "elev": 177, "county": "高雄市", "region": "南部", "diff": "低", "estTime": "1～1.5 小時", "trailhead": "大社觀音山風景區鳳儀宮", "gear": "運動休閒鞋、防曬水壺", "note": "南台灣熱門郊山，沿途市集熱鬧，奇特泥岩惡地地形明顯"}, {"id": 76, "code": "#076", "name": "笠頂山", "elev": 659, "county": "屏東縣", "region": "南部", "diff": "低至中", "estTime": "2～3 小時", "trailhead": "瑪家佳義村登山口 (前山/後山線)", "gear": "健行鞋、登山杖、充足飲水", "note": "屏東最熱門郊山，前山線陡峭練腳力、後山線平緩舒適"}, {"id": 77, "code": "#077", "name": "壽山 (高雄山)", "elev": 356, "county": "高雄市", "region": "南部", "diff": "低", "estTime": "1.5～2.5 小時", "trailhead": "鼓山動物園 / 龍泉寺登山口", "gear": "運動健行鞋、防蚊液、水壺", "note": "高位珊瑚礁岩盤地形，隨處可見台灣獼猴（食物請勿外露）"}, {"id": 78, "code": "#078", "name": "棚集山", "elev": 899, "county": "屏東縣", "region": "南部", "diff": "低至中", "estTime": "2.5～3.5 小時", "trailhead": "來義丹林村登山口 (田園線/山稜線)", "gear": "健行鞋、登山杖、充足飲水", "note": "山頂腹地寬廣並設有休憩棚架，南屏東人氣訓練郊山"}, {"id": 79, "code": "#079", "name": "女仍山", "elev": 804, "county": "屏東縣", "region": "南部", "diff": "中", "estTime": "3～4 小時", "trailhead": "獅子鄉雙流伊屯部落登山口", "gear": "抓地登山鞋、耐磨手套、防螞蝗裝備", "note": "需多次溯溪渡過楓港溪支流並拉繩陡上，原始野趣十足"}, {"id": 80, "code": "#080", "name": "里龍山", "elev": 1062, "county": "屏東縣", "region": "南部", "diff": "中至高", "estTime": "5～6.5 小時", "trailhead": "獅子鄉竹坑 / 鯉龍山人文紀念館登山口", "gear": "中高筒登山鞋、手套、充足水糧", "note": "恆春半島最高峰，巨石溪谷與樹根陡坡，山頂360度看台灣海峽與太平洋"}, {"id": 81, "code": "#081", "name": "大山母山", "elev": 325, "county": "屏東縣", "region": "南部", "diff": "低至中", "estTime": "2～2.5 小時", "trailhead": "恆春南灣產業道路登山口", "gear": "健行鞋、防曬帽、充足飲水", "note": "台灣最南端小百岳，無遮蔽草原稜線俯瞰南灣、大尖山與巴士海峽"}, {"id": 82, "code": "#082", "name": "灣坑頭山", "elev": 616, "county": "宜蘭縣", "region": "東部", "diff": "低至中", "estTime": "3～4 小時", "trailhead": "大里天公廟 / 草嶺古道啞口起登", "gear": "健行鞋、防風外套、登山杖", "note": "草嶺古道最高點，秋冬銀白芒花海與龜山島海景絕美"}, {"id": 83, "code": "#083", "name": "三角崙山", "elev": 1029, "county": "新北市/宜蘭縣", "region": "東部", "diff": "中", "estTime": "4.5～6 小時", "trailhead": "礁溪五峰旗瀑布 → 聖母山莊登山步道", "gear": "抓地登山鞋、登山杖、防風雨衣", "note": "爆紅「抹茶山」所在，前段緩坡林道、後段1.6K連續階梯陡上"}, {"id": 84, "code": "#084", "name": "鵲子山 (鴻子山)", "elev": 679, "county": "宜蘭縣", "region": "東部", "diff": "中", "estTime": "3～4 小時", "trailhead": "礁溪跑馬古道 / 圓通寺登山口", "gear": "抓地登山鞋、手套、登山杖", "note": "外型似富士山被稱「礁溪富士山」，後段路徑陡峭多芒草"}, {"id": 85, "code": "#085", "name": "三星山", "elev": 2352, "county": "宜蘭縣", "region": "東部", "diff": "中", "estTime": "3.5～4.5 小時", "trailhead": "太平山翠峰林道5.5K登山口", "gear": "中筒登山鞋、防風雨保暖衣、手套", "note": "宜蘭著名中級山，穿越潮濕檜木與箭竹林，海拔高氣溫偏低"}, {"id": 86, "code": "#086", "name": "卡拉寶山", "elev": 2397, "county": "花蓮縣", "region": "東部", "diff": "低", "estTime": "1～1.5 小時", "trailhead": "中橫台8線碧綠神木停車場旁", "gear": "登山鞋、保暖防風外套", "note": "中橫公路旁高海拔小百岳，步道短而陡上，箭竹林相幽美"}, {"id": 87, "code": "#087", "name": "立霧山", "elev": 1274, "county": "花蓮縣", "region": "東部", "diff": "中", "estTime": "4～5 小時", "trailhead": "太魯閣得卡倫步道 → 大禮大同部落", "gear": "中筒登山鞋、登山杖、充足飲水", "note": "需先攀爬千階天梯至大禮部落，融合太魯閣族山林文化"}, {"id": 88, "code": "#088", "name": "初音山", "elev": 906, "county": "花蓮縣", "region": "東部", "diff": "低至中", "estTime": "2～2.5 小時", "trailhead": "吉安鄉華林園 / 楓林步道上方登山口", "gear": "健行鞋、登山杖、防蚊液", "note": "俯瞰花蓮市區、吉安平原與太平洋海岸線的絕佳觀景台"}, {"id": 89, "code": "#089", "name": "鯉魚山", "elev": 601, "county": "花蓮縣", "region": "東部", "diff": "低", "estTime": "1.5～2 小時", "trailhead": "壽豐鄉鯉魚潭遊客中心 / 賞鳥步道", "gear": "健行鞋、防蚊液、水壺", "note": "木棧道與土徑設施完善，山頂可同時俯瞰鯉魚潭與花東縱谷"}, {"id": 90, "code": "#090", "name": "月眉山", "elev": 614, "county": "花蓮縣", "region": "東部", "diff": "低", "estTime": "2～2.5 小時", "trailhead": "壽豐鄉米棧古道 / 193縣道登山口", "gear": "健行鞋、登山杖、防蚊液", "note": "海岸山脈北段最高峰，步道平緩寬大、林蔭涼爽"}, {"id": 91, "code": "#091", "name": "八里灣山 (貓公富士山)", "elev": 924, "county": "花蓮縣", "region": "東部", "diff": "中至高", "estTime": "5～6.5 小時", "trailhead": "豐濱鄉八里灣部落登山口", "gear": "抓地登山鞋、防螞蝗裝備、手套、頭燈", "note": "阿美族聖山，路途遙遠且需多次渡溪與陡上，具極高野性挑戰"}, {"id": 92, "code": "#092", "name": "萬人山", "elev": 886, "county": "花蓮縣", "region": "東部", "diff": "低", "estTime": "1.5～2 小時", "trailhead": "富里鄉六十石山金針花園區上方", "gear": "輕便健行鞋、防曬帽", "note": "每年8-9月金針花季絕美，輕鬆登頂俯瞰花東縱谷稻浪"}, {"id": 93, "code": "#093", "name": "都蘭山", "elev": 1190, "county": "台東縣", "region": "東部", "diff": "中", "estTime": "3.5～4.5 小時", "trailhead": "東河鄉都蘭林道4K登山口", "gear": "抓地登山鞋、手套、登山杖、防蚊", "note": "卑南與阿美族聖山，雲霧繚繞的原始闊葉林，遠眺太平洋與綠島"}, {"id": 94, "code": "#094", "name": "太麻里山", "elev": 1340, "county": "台東縣", "region": "東部", "diff": "低", "estTime": "0.5～1 小時", "trailhead": "太麻里金針山雙乳峰停車場旁", "gear": "輕便外套、防曬帽", "note": "開車可直達雙乳峰附近，步行15分鐘即達一等三角點，金針花季極美"}, {"id": 95, "code": "#095", "name": "加奈美山", "elev": 780, "county": "台東縣", "region": "東部", "diff": "低至中", "estTime": "2～2.5 小時", "trailhead": "大武鄉加津林產業道路登山口", "gear": "健行鞋、登山杖、防蚊液", "note": "林道穿行檳榔園與次生林，登頂可眺望南迴太平洋海岸"}, {"id": 96, "code": "#096", "name": "巴塱衛山", "elev": 325, "county": "台東縣", "region": "東部", "diff": "低", "estTime": "0.5～1 小時", "trailhead": "大武鄉南興村忘憂亭步道入口", "gear": "輕便運動鞋、防曬帽", "note": "步道平緩好走，登頂忘憂亭擁有無敵太平洋海景視野"}, {"id": 97, "code": "#097", "name": "紅頭山", "elev": 552, "county": "台東縣", "region": "離島", "diff": "中", "estTime": "3.5～4.5 小時", "trailhead": "蘭嶼鄉椰油村 / 紅頭村登山口", "gear": "抓地登山鞋、耐磨手套、長袖防刮", "note": "蘭嶼最高峰（達悟族聖山），熱帶雨林樹根盤錯濕滑，需專人或熟路者帶領"}, {"id": 98, "code": "#098", "name": "雲台山", "elev": 248, "county": "連江縣", "region": "離島", "diff": "低", "estTime": "0.2～0.5 小時", "trailhead": "南竿鄉雲台山軍情館觀景台旁", "gear": "輕便休閒鞋", "note": "馬祖南竿第一高峰，車道直達觀景台旁，俯瞰馬祖列島海景"}, {"id": 99, "code": "#099", "name": "太武山", "elev": 253, "county": "金門縣", "region": "離島", "diff": "低", "estTime": "1.5～2 小時", "trailhead": "金湖鎮玉章路牌樓登山口", "gear": "運動休閒鞋、防曬水壺", "note": "金門最高峰，全程寬大柏油坡道，必訪「毋忘在莒」勒石與海印寺"}, {"id": 100, "code": "#100", "name": "蛇頭山", "elev": 20, "county": "澎湖縣", "region": "離島", "diff": "低", "estTime": "0.2～0.5 小時", "trailhead": "馬公市風櫃尾蛇頭山遊憩區", "gear": "輕便休閒鞋、防曬帽", "note": "全台海拔最低小百岳，輕鬆漫步觀賞荷蘭城堡遺址與馬公港海景"}];
-    var STORAGE_KEY = "tw_100_small_peaks_logs_v5";
-    // userLogs 為陣列，支援紀錄多趟出團：[ { logId, peakId, status, date, startTime, endTime, participants, transport, memo } ]
-    var userLogs = [];
+  <!-- 新增 / 編輯視窗 -->
+  <div id="recordModal" class="hidden fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl w-full max-w-xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden border border-zinc-200">
+      <div class="px-5 py-4 border-b border-zinc-200 bg-zinc-50/70 flex items-start justify-between">
+        <div>
+          <div class="flex items-center gap-2">
+            <span id="mCode" class="text-[11px] font-bold bg-[#e8f3ee] text-[#1b4332] px-2 py-0.5 rounded-full">#001</span>
+            <h3 id="mName" class="text-lg font-bold text-zinc-900">大屯山</h3>
+            <span id="mElev" class="text-xs text-zinc-500">1,092m</span>
+          </div>
+          <p id="mCounty" class="text-xs text-zinc-500 mt-1">台北市/新北市 • 北部</p>
+        </div>
+        <button type="button" id="btnCloseModal"
+          class="px-2.5 py-1 rounded-lg bg-white border border-zinc-200 text-zinc-500 hover:text-zinc-900 text-xs font-bold cursor-pointer">
+          ✕
+        </button>
+      </div>
 
-    function loadLogs() {
+      <div class="p-5 overflow-y-auto space-y-4">
+        <!-- 新增模式專用：100座小百岳下拉選單 -->
+        <div id="mPeakSelectWrap" class="hidden">
+          <label for="mPeakSelect" class="block text-xs font-semibold text-zinc-700 mb-1.5">選擇小百岳名稱</label>
+          <select id="mPeakSelect"
+            class="w-full px-3 py-2 text-sm font-semibold bg-zinc-50 border border-zinc-300 rounded-xl focus:bg-white focus:outline-none focus:border-[#1b4332]"></select>
+        </div>
+
+        <!-- 山岳攻略資訊 -->
+        <div class="bg-[#f4f7f5] border border-[#e2e8e4] rounded-xl p-3.5 text-xs text-zinc-600 space-y-1">
+          <div>難度：<strong id="mDiff" class="text-zinc-900">低</strong> ｜ 預估來回：<strong id="mEstTime" class="text-zinc-900">1.5～2 小時</strong></div>
+          <div>起登點：<span id="mTrailhead" class="text-zinc-800">-</span></div>
+          <div>核心裝備：<span id="mGear" class="text-zinc-800">-</span></div>
+          <div>路況特色：<span id="mNote" class="text-zinc-700">-</span></div>
+        </div>
+
+        <input type="hidden" id="mPeakId" />
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+          <div>
+            <label for="mStatus" class="block text-xs font-semibold text-zinc-600 mb-1.5">完登狀態</label>
+            <select id="mStatus"
+              class="w-full px-3 py-2 text-sm bg-zinc-50 border border-zinc-200 rounded-xl focus:bg-white focus:outline-none focus:border-[#1b4332]">
+              <option value="已完登">已完登</option>
+              <option value="未完成">未完成</option>
+            </select>
+          </div>
+          <div>
+            <label for="mDate" class="block text-xs font-semibold text-zinc-600 mb-1.5">攀登日期</label>
+            <input type="date" id="mDate"
+              class="w-full px-3 py-2 text-sm bg-zinc-50 border border-zinc-200 rounded-xl focus:bg-white focus:outline-none focus:border-[#1b4332]" />
+          </div>
+          <div>
+            <label for="mStart" class="block text-xs font-semibold text-zinc-600 mb-1.5">起始時間</label>
+            <select id="mStart"
+              class="w-full px-3 py-2 text-sm bg-zinc-50 border border-zinc-200 rounded-xl focus:bg-white focus:outline-none focus:border-[#1b4332]"></select>
+          </div>
+          <div>
+            <label for="mEnd" class="block text-xs font-semibold text-zinc-600 mb-1.5">結束時間</label>
+            <select id="mEnd"
+              class="w-full px-3 py-2 text-sm bg-zinc-50 border border-zinc-200 rounded-xl focus:bg-white focus:outline-none focus:border-[#1b4332]"></select>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between px-3.5 py-2.5 bg-[#e8f3ee] rounded-xl text-xs sm:text-sm font-semibold text-[#1b4332]">
+          <span>實際總耗時（自動計算）</span>
+          <span id="mDuration">--</span>
+        </div>
+
+        <div>
+          <div class="flex justify-between items-center mb-1.5">
+            <label for="mParticipants" class="text-xs font-semibold text-zinc-600">參加者名單（以頓號「、」或逗號「,」分隔）</label>
+            <span class="text-[11px] font-bold bg-[#e8f3ee] text-[#1b4332] px-2 py-0.5 rounded-full">
+              自動計數：<span id="mHeadcount">0</span> 人
+            </span>
+          </div>
+          <input type="text" id="mParticipants" placeholder="例如：培文、Sandy、老哥、胖胖"
+            class="w-full px-3 py-2 text-sm bg-zinc-50 border border-zinc-200 rounded-xl focus:bg-white focus:outline-none focus:border-[#1b4332]" />
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+          <div>
+            <label for="mTransport" class="block text-xs font-semibold text-zinc-600 mb-1.5">車輛 / 接駁安排</label>
+            <input type="text" id="mTransport" placeholder="例如：自駕前往、共乘安排"
+              class="w-full px-3 py-2 text-sm bg-zinc-50 border border-zinc-200 rounded-xl focus:bg-white focus:outline-none focus:border-[#1b4332]" />
+          </div>
+          <div>
+            <label for="mMemo" class="block text-xs font-semibold text-zinc-600 mb-1.5">費用分攤 / 心得備註</label>
+            <input type="text" id="mMemo" placeholder="例如：油資均攤、天氣晴朗"
+              class="w-full px-3 py-2 text-sm bg-zinc-50 border border-zinc-200 rounded-xl focus:bg-white focus:outline-none focus:border-[#1b4332]" />
+          </div>
+        </div>
+      </div>
+
+      <div class="px-5 py-3.5 border-t border-zinc-200 bg-zinc-50 flex items-center justify-between">
+        <button type="button" id="btnClearRecord"
+          class="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-rose-600 hover:bg-rose-50 cursor-pointer">
+          重設此山紀錄
+        </button>
+        <div class="flex gap-2">
+          <button type="button" id="btnCancelModal"
+            class="px-3.5 py-2 rounded-xl bg-white border border-zinc-200 text-xs sm:text-sm font-semibold text-zinc-600 hover:bg-zinc-100 cursor-pointer">
+            取消
+          </button>
+          <button type="button" id="btnSaveRecord"
+            class="px-4 py-2 rounded-xl bg-[#1b4332] hover:bg-[#2d6a4f] text-xs sm:text-sm font-semibold text-white cursor-pointer">
+            儲存紀錄
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, doc, setDoc, deleteDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    // =========================================================================
+    // 【GitHub Pages 外部多人即時同步設定區】
+    // 若您將此檔案上傳至 GitHub Pages 並希望所有訪客共用同一份雲端即時資料：
+    // 1. 前往 https://console.firebase.google.com/ 建立免費專案
+    // 2. 啟用 Authentication (匿名登入) 與 Firestore Database (測試模式)
+    // 3. 將專案的 firebaseConfig 貼到下方 CUSTOM_FIREBASE_CONFIG 物件中即可！
+    // 若留空 (null)，網頁會自動使用瀏覽器本機儲存 (localStorage)，確保外部訪客皆可正常查詢與使用。
+    // =========================================================================
+    const CUSTOM_FIREBASE_CONFIG = null;
+
+    // 完整 100 座台灣小百岳資料庫
+    const PEAKS_DB = [
+      {"id": 1, "code": "#001", "name": "大屯山", "elev": 1092, "county": "台北市/新北市", "region": "北部", "diff": "低", "estTime": "1.5～2 小時", "trailhead": "鞍部停車場 / 二子坪遊客中心", "gear": "健行鞋、防風外套、水壺", "note": "石階與車道為主，稜線風大易起霧，秋冬芒草季極美"},
+      {"id": 2, "code": "#002", "name": "七星山", "elev": 1120, "county": "台北市", "region": "北部", "diff": "低至中", "estTime": "2.5～3.5 小時", "trailhead": "冷水坑 / 小油坑登山口", "gear": "健行鞋、防風雨外套、登山杖", "note": "台北市最高峰，全線石階陡上，硫磺噴氣孔景觀特殊"},
+      {"id": 3, "code": "#003", "name": "大武崙山", "elev": 231, "county": "基隆市", "region": "北部", "diff": "低", "estTime": "0.5～1 小時", "trailhead": "大武崙砲台停車場", "gear": "輕便運動鞋、水壺", "note": "老少咸宜親子步道，可俯瞰外木山海岸與基隆嶼"},
+      {"id": 4, "code": "#004", "name": "槓子寮山", "elev": 163, "county": "基隆市", "region": "北部", "diff": "低", "estTime": "0.5～1 小時", "trailhead": "立德路槓子寮砲台停車場", "gear": "輕便運動鞋、防蚊液", "note": "緊鄰國定古蹟槓子寮砲台，視野開闊眺望八斗子漁港"},
+      {"id": 5, "code": "#005", "name": "觀音山", "elev": 616, "county": "新北市", "region": "北部", "diff": "低至中", "estTime": "1.5～2.5 小時", "trailhead": "凌雲禪寺硬漢嶺登山口", "gear": "健行鞋、登山杖、飲水", "note": "「硬漢嶺」連續石階考驗腳力，山頂展望淡水河口絕佳"},
+      {"id": 6, "code": "#006", "name": "基隆山", "elev": 588, "county": "新北市", "region": "北部", "diff": "低至中", "estTime": "1.5～2 小時", "trailhead": "九份隔頂登山口", "gear": "健行鞋、防曬帽、充足飲水", "note": "全線無遮蔽石階陡上，360度俯瞰九份山城與陰陽海"},
+      {"id": 7, "code": "#007", "name": "紅淡山", "elev": 210, "county": "基隆市", "region": "北部", "diff": "低", "estTime": "1～1.5 小時", "trailhead": "南榮路寶明寺登山口", "gear": "輕便健行鞋、防蚊液", "note": "基隆市區後花園，步道四通八達、林蔭茂密"},
+      {"id": 8, "code": "#008", "name": "大崙頭山", "elev": 478, "county": "台北市", "region": "北部", "diff": "低", "estTime": "1.5～2 小時", "trailhead": "碧山巖 / 翠山步道入口", "gear": "輕便健行鞋、水壺", "note": "內湖最高峰，木棧道與石階完善，乘風堡觀景台視野佳"},
+      {"id": 9, "code": "#009", "name": "劍潭山", "elev": 153, "county": "台北市", "region": "北部", "diff": "低", "estTime": "1.5～2 小時", "trailhead": "捷運劍潭站登山口", "gear": "運動休閒鞋、水壺", "note": "捷運可達，老地方觀景平台可賞松山機場飛機起降與101"},
+      {"id": 10, "code": "#010", "name": "五分山", "elev": 757, "county": "新北市", "region": "北部", "diff": "低至中", "estTime": "2.5～3.5 小時", "trailhead": "十分台灣煤礦博物館 / 氣象雷達站", "gear": "健行鞋、防風外套、登山杖", "note": "稜線步道宛如萬里長城，氣象雷達站白球為著名地標"},
+      {"id": 11, "code": "#011", "name": "姜子寮山", "elev": 729, "county": "基隆市", "region": "北部", "diff": "低", "estTime": "1.5～2 小時", "trailhead": "泰安瀑布 / 姜子寮山停車場", "gear": "健行鞋、登山杖", "note": "全線枕木階梯好走，山頂設四座觀景台擁有360度無敵視野"},
+      {"id": 12, "code": "#012", "name": "大尖山", "elev": 460, "county": "新北市", "region": "北部", "diff": "低至中", "estTime": "1.5～2.5 小時", "trailhead": "汐止天秀宮登山口", "gear": "健行鞋、登山杖", "note": "石階陡峭直上，山頂視野涵蓋大台北盆地與基隆嶼"},
+      {"id": 13, "code": "#013", "name": "南港山", "elev": 375, "county": "台北市", "region": "北部", "diff": "低至中", "estTime": "2～3 小時", "trailhead": "象山捷運站 / 慈惠堂登山口", "gear": "健行鞋、手套(若走攀岩線)", "note": "四獸山最高峰，九五峰巨石與101夜景極具代表性"},
+      {"id": 14, "code": "#014", "name": "土庫岳 (大坪山)", "elev": 389, "county": "新北市", "region": "北部", "diff": "低", "estTime": "1.5～2 小時", "trailhead": "深坑大坪街 / 南港舊莊更寮古道", "gear": "健行鞋、防蚊液", "note": "百年古道幽靜涼爽，山頂有一等三角點與涼亭"},
+      {"id": 15, "code": "#015", "name": "大棟山", "elev": 405, "county": "新北市/桃園市", "region": "桃竹苗", "diff": "低", "estTime": "1.5～2.5 小時", "trailhead": "405高地直達 / 大同山青龍嶺連走", "gear": "輕便健行鞋、防曬水壺", "note": "405高地可直接車抵三角點旁；連走步道則為林蔭土徑"},
+      {"id": 16, "code": "#016", "name": "南勢角山", "elev": 302, "county": "新北市", "region": "北部", "diff": "低", "estTime": "1.5～2 小時", "trailhead": "中和烘爐地南山福德宮", "gear": "運動健行鞋、水壺", "note": "結合烘爐地土地公廟參拜，稜線步道平緩輕鬆"},
+      {"id": 17, "code": "#017", "name": "二格山 (石尖山)", "elev": 678, "county": "台北市/新北市", "region": "北部", "diff": "低", "estTime": "1.5～2 小時", "trailhead": "草湳大榕樹 / 北宜公路二格公園", "gear": "健行鞋、登山杖", "note": "木棧階梯與原始山徑交錯，觀景台可眺望翡翠水庫"},
+      {"id": 18, "code": "#018", "name": "天上山 (內坡山)", "elev": 430, "county": "新北市", "region": "北部", "diff": "低", "estTime": "1.5～2.5 小時", "trailhead": "土城承天禪寺 / 桐花公園", "gear": "健行鞋、防蚊液", "note": "土城山系最高峰，四五月桐花季雪白花毯極具人氣"},
+      {"id": 19, "code": "#019", "name": "福德坑山 (鳶山)", "elev": 321, "county": "新北市", "region": "北部", "diff": "低至中", "estTime": "1.5～2.5 小時", "trailhead": "三峽鳶山大鐘 / 茅埔路登山口", "gear": "抓地健行鞋、手套", "note": "官方名單稱鳶山，基點在福德坑山；鳶山彩壁與岩稜需留意安全"},
+      {"id": 20, "code": "#020", "name": "獅仔頭山", "elev": 858, "county": "新北市", "region": "北部", "diff": "中", "estTime": "2.5～3.5 小時", "trailhead": "新店獅頭山登山口", "gear": "抓地登山鞋、耐磨手套、登山杖", "note": "著名近90度木造崖梯攀爬，兼顧古戰場歷史遺跡與原始林相"},
+      {"id": 21, "code": "#021", "name": "金面山", "elev": 667, "county": "桃園市", "region": "桃竹苗", "diff": "中", "estTime": "2.5～3.5 小時", "trailhead": "大溪第三登山口 (阮家土雞城)", "gear": "抓地登山鞋、手套、登山杖", "note": "鳥嘴尖至主峰有大落差巨石拉繩與樹根路，雨後泥濘濕滑"},
+      {"id": 22, "code": "#022", "name": "東眼山", "elev": 1212, "county": "桃園市/新北市", "region": "桃竹苗", "diff": "低", "estTime": "2～2.5 小時", "trailhead": "東眼山森林遊樂區遊客中心", "gear": "慢跑鞋/一般登山鞋、水壺", "note": "自導式步道木棧道與碎石階梯完善，柳杉林芬多精豐富"},
+      {"id": 23, "code": "#023", "name": "溪洲山", "elev": 577, "county": "桃園市", "region": "桃竹苗", "diff": "低至中", "estTime": "3～4 小時", "trailhead": "坪林收費站 / 苗圃登山口", "gear": "健行鞋、登山杖、防蚊防曬", "note": "鄰近石門水庫，前段爬升坡度稍陡，稜線叉路多需留意路標"},
+      {"id": 24, "code": "#024", "name": "石門山 (小竹坑山)", "elev": 551, "county": "桃園市", "region": "桃竹苗", "diff": "低", "estTime": "1.5～2.5 小時", "trailhead": "勞工育樂中心 / 北端登山口", "gear": "健行鞋、登山杖、基礎飲水", "note": "大眾化熱門郊山，好漢坡路段較陡需微拉繩，其餘路徑平緩"},
+      {"id": 25, "code": "#025", "name": "石牛山", "elev": 671, "county": "桃園市/新竹縣", "region": "桃竹苗", "diff": "中", "estTime": "2.5～3.5 小時", "trailhead": "關西石福宮登山口 (O型環狀)", "gear": "抓地防滑鞋、耐磨手套、登山杖", "note": "左線水路需過溪踩石，後段有垂直岩壁拉繩與狹窄石洞"},
+      {"id": 26, "code": "#026", "name": "十八尖山", "elev": 132, "county": "新竹市", "region": "桃竹苗", "diff": "低", "estTime": "1～1.5 小時", "trailhead": "博愛街 / 寶山路登山口", "gear": "運動休閒鞋、水壺", "note": "新竹市區都會森林公園，全線柏油路與平緩階梯"},
+      {"id": 27, "code": "#027", "name": "中坑山 (飛鳳山)", "elev": 462, "county": "新竹縣", "region": "桃竹苗", "diff": "低", "estTime": "2～2.5 小時", "trailhead": "感應橋 / 觀日坪古道O型", "gear": "健行鞋、登山杖", "note": "小百岳基點位於中坑山，觀日亭晴天可遠眺台北101"},
+      {"id": 28, "code": "#028", "name": "李棟山 (李崠山)", "elev": 1914, "county": "新竹縣/桃園市", "region": "桃竹苗", "diff": "低至中", "estTime": "1.5～2.5 小時", "trailhead": "李棟山莊登山口 (新舊路)", "gear": "登山鞋、防風保暖外套、登山杖", "note": "山頂有歷史古堡遺跡，海拔近2000m秋冬氣溫偏低"},
+      {"id": 29, "code": "#029", "name": "獅頭山", "elev": 492, "county": "苗栗縣/新竹縣", "region": "桃竹苗", "diff": "低", "estTime": "1.5～2 小時", "trailhead": "獅尾遊客中心 / 勸化堂停車場", "gear": "健行鞋、水壺", "note": "橫跨南庄與峨眉，寺廟古道群環繞，石階平緩安全"},
+      {"id": 30, "code": "#030", "name": "五指山", "elev": 1062, "county": "新竹縣", "region": "桃竹苗", "diff": "中", "estTime": "3～4 小時", "trailhead": "灶君堂 / 玉皇宮登山口", "gear": "中筒登山鞋、雙登山杖、手套", "note": "連峰上下起伏大、連續木棧階梯與樹根交錯（全連峰約5-6.5h）"},
+      {"id": 31, "code": "#031", "name": "鵝公髻山", "elev": 1579, "county": "新竹縣/苗栗縣", "region": "桃竹苗", "diff": "中", "estTime": "3.5～5 小時", "trailhead": "上山人家東北峰口 / 五峰第一登山口", "gear": "登山鞋、登山杖、手套、離線地圖", "note": "柳杉林幽美，後段登頂坡度陡峭多泥濘樹根，雨後易滑"},
+      {"id": 32, "code": "#032", "name": "向天湖山", "elev": 1225, "county": "苗栗縣", "region": "桃竹苗", "diff": "中", "estTime": "3～3.5 小時", "trailhead": "南庄向天湖停車場 (可連走光天高山)", "gear": "抓地登山鞋、登山杖、手套、保暖層", "note": "杉木林潮濕多霧，石塊易長青苔濕滑，局部路段需拉繩"},
+      {"id": 33, "code": "#033", "name": "仙山 (紅毛館山)", "elev": 967, "county": "苗栗縣", "region": "桃竹苗", "diff": "中", "estTime": "1.5～2 小時", "trailhead": "獅潭靈洞宮登山口", "gear": "抓地力佳登山鞋、耐磨手套", "note": "過望陽亭後為近垂直裸岩瘦稜拉繩攀爬，暴露感重"},
+      {"id": 34, "code": "#034", "name": "加里山", "elev": 2220, "county": "苗栗縣", "region": "桃竹苗", "diff": "高", "estTime": "6～7.5 小時", "trailhead": "南庄鹿場登山口 / 大坪林道", "gear": "中高筒登山鞋、頭燈、手套、防風雨衣", "note": "中級山之珠，落差近千米，後段巨石樹根拉繩攀爬，午後易起霧"},
+      {"id": 35, "code": "#035", "name": "火炎山", "elev": 596, "county": "苗栗縣", "region": "桃竹苗", "diff": "低至中", "estTime": "3～3.5 小時", "trailhead": "三義台13線55.3K登山口 (O型)", "gear": "刻紋深健行鞋、登山杖、防曬、充足水", "note": "礫石惡地地質鬆動嚴禁靠近崖邊，無遮蔽處防曬極重要"},
+      {"id": 36, "code": "#036", "name": "關刀山", "elev": 889, "county": "苗栗縣", "region": "桃竹苗", "diff": "低", "estTime": "1～1.5 小時", "trailhead": "三義苗56鄉道第一登山口", "gear": "健行鞋、登山杖", "note": "出關古道聖關段林蔭原始幽靜，坡度平緩親民"},
+      {"id": 37, "code": "#037", "name": "馬那邦山", "elev": 1407, "county": "苗栗縣", "region": "桃竹苗", "diff": "低至中", "estTime": "3～4 小時", "trailhead": "大湖珠湖 / 上湖 / 天然湖登山口", "gear": "健行鞋/登山鞋、登山杖、防風外套", "note": "秋冬著名賞楓勝地，古戰場遺跡與石門景觀極具特色"},
+      {"id": 38, "code": "#038", "name": "鐵砧山", "elev": 236, "county": "台中市", "region": "中部", "diff": "低", "estTime": "0.5～1 小時", "trailhead": "大甲鐵砧山雕塑公園", "gear": "輕便運動鞋、水壺", "note": "三角點位於公園旁平緩易達，順遊劍井與永信運動公園"},
+      {"id": 39, "code": "#039", "name": "稍來山", "elev": 2307, "county": "台中市", "region": "中部", "diff": "低至中", "estTime": "2.5～3.5 小時", "trailhead": "大雪山林道30.5K / 35K收費站", "gear": "登山鞋、防風保暖衣物、登山杖", "note": "秋末台灣紅榨槭紅葉絕美，山頂瞭望台視野極佳"},
+      {"id": 40, "code": "#040", "name": "聚興山", "elev": 500, "county": "台中市", "region": "中部", "diff": "低", "estTime": "2～2.5 小時", "trailhead": "潭子新田登山步道停車場 (O型)", "gear": "一般健行鞋、登山杖", "note": "木棧道與枕木階梯完善，登頂段有短暫原始山徑，可俯瞰台中盆地"},
+      {"id": 41, "code": "#041", "name": "頭嵙山", "elev": 859, "county": "台中市", "region": "中部", "diff": "低至中", "estTime": "3～4 小時", "trailhead": "大坑1～5號 / 5-1號步道起登", "gear": "抓地健行鞋、防滑手套、登山杖", "note": "台中最高峰，圓木棧道沿稜線起伏，考驗平衡感與肌耐力"},
+      {"id": 42, "code": "#042", "name": "南觀音山 (觀音山)", "elev": 318, "county": "台中市", "region": "中部", "diff": "低", "estTime": "1.5～2 小時", "trailhead": "北屯大坑橋旁南觀音山登山口", "gear": "輕便健行鞋、水壺", "note": "樹蔭遮蔽高、階梯與土徑交錯，山頂巨大金色觀音像醒目"},
+      {"id": 43, "code": "#043", "name": "三汀山", "elev": 480, "county": "台中市", "region": "中部", "diff": "低", "estTime": "1.5～2 小時", "trailhead": "太平咬人狗坑生態景觀步道", "gear": "健行鞋、防蚊液、水壺", "note": "望高寮觀景台可眺望頭汴坑溪與台中市區夕陽"},
+      {"id": 44, "code": "#044", "name": "暗影山 (酒桶山)", "elev": 997, "county": "台中市", "region": "中部", "diff": "低至中", "estTime": "2～2.5 小時", "trailhead": "太平酒桶山法蝶 / 產業道路登山口", "gear": "抓地登山鞋、手套、登山杖", "note": "山頂前有大岩壁拉繩段，展望中央山脈與台中盆地"},
+      {"id": 45, "code": "#045", "name": "大橫屏山", "elev": 1206, "county": "台中市/南投縣", "region": "中部", "diff": "中至高", "estTime": "5～6.5 小時", "trailhead": "國姓長流 / 太平碧山農場登山口", "gear": "中高筒登山鞋、手套、頭燈、離線地圖", "note": "山勢如屏風橫亙，路徑原始陡峭、芒草與拉繩多，具一定挑戰度"},
+      {"id": 46, "code": "#046", "name": "阿罩霧山", "elev": 249, "county": "台中市", "region": "中部", "diff": "低", "estTime": "1～1.5 小時", "trailhead": "霧峰樟公巷 / 中心瓏步道", "gear": "輕便運動鞋、防蚊液", "note": "穿過大片鳳梨田與荔枝園，路線平緩適合親子健行"},
+      {"id": 47, "code": "#047", "name": "九份二山", "elev": 1174, "county": "南投縣", "region": "中部", "diff": "低", "estTime": "1.5～2 小時", "trailhead": "國姓龍南道路登山口", "gear": "健行鞋、防蚊液、水壺", "note": "921地震國家紀念地，順遊傾斜屋與堰塞湖景觀"},
+      {"id": 48, "code": "#048", "name": "橫山", "elev": 443, "county": "南投縣/彰化縣", "region": "中部", "diff": "低", "estTime": "1～1.5 小時", "trailhead": "八卦山脈139縣道橫山賞鷹平台", "gear": "輕便健行鞋、防曬水壺", "note": "八卦山脈最高峰，春季為灰面鵟鷹過境賞鷹熱點"},
+      {"id": 49, "code": "#049", "name": "貓囒山", "elev": 1016, "county": "南投縣", "region": "中部", "diff": "低", "estTime": "1.5～2 小時", "trailhead": "魚池明潭國中旁茶業改良場入口", "gear": "運動健行鞋、水壺", "note": "沿途經過日式宿舍、阿薩姆紅茶園與錫蘭橄欖樹大道，俯瞰日月潭"},
+      {"id": 50, "code": "#050", "name": "集集大山", "elev": 1392, "county": "南投縣", "region": "中部", "diff": "低", "estTime": "0.5～1 小時", "trailhead": "車輛可直達山頂電視轉播站旁", "gear": "輕便外套、水壺", "note": "車行可直達三角點（若從集集市區徒步踢林道則需約6-7小時）"},
+      {"id": 51, "code": "#051", "name": "松柏坑山 (獅子頭山)", "elev": 431, "county": "彰化縣/南投縣", "region": "中部", "diff": "低", "estTime": "0.5～1 小時", "trailhead": "名間松柏嶺受天宮旁茶園", "gear": "輕便休閒鞋", "note": "位於茶園之中的三角點，幾乎無爬升，順遊松柏嶺步道"},
+      {"id": 52, "code": "#052", "name": "後尖山", "elev": 1008, "county": "南投縣", "region": "中部", "diff": "低至中", "estTime": "2～2.5 小時", "trailhead": "魚池頭社佛堂 / 慈恩塔步道", "gear": "健行鞋、登山杖", "note": "日月潭四兄妹之一，後段連續木階梯陡上，林相優美"},
+      {"id": 53, "code": "#053", "name": "鳳凰山", "elev": 1698, "county": "南投縣", "region": "中部", "diff": "中", "estTime": "4～5 小時", "trailhead": "溪頭自然教育園區天文台路線", "gear": "中筒登山鞋、登山杖、防風雨衣", "note": "沿稜線竹林與柳杉林起伏，潮濕多霧石階易滑"},
+      {"id": 54, "code": "#054", "name": "金柑樹山", "elev": 2091, "county": "南投縣", "region": "中部", "diff": "中", "estTime": "4.5～5.5 小時", "trailhead": "杉林溪藥花園 / 忘憂森林路線", "gear": "登山鞋、登山杖、保暖防風衣", "note": "可順遊忘憂森林與嶺頭山，高海拔雲霧繚繞氣候涼爽"},
+      {"id": 55, "code": "#055", "name": "石壁山", "elev": 1751, "county": "雲林縣/嘉義縣", "region": "中部", "diff": "低至中", "estTime": "2.5～3.5 小時", "trailhead": "古坑草嶺石壁九芎神木 / 嘉南雲峰連走", "gear": "登山鞋、登山杖、保暖衣物", "note": "孟宗竹林秘境「五元兩角」附近，生態豐富空氣清新"},
+      {"id": 56, "code": "#056", "name": "大尖山", "elev": 1305, "county": "雲林縣/嘉義縣", "region": "中部", "diff": "低至中", "estTime": "2.5～3.5 小時", "trailhead": "古坑華山教育農園 / 梅山二尖山步道", "gear": "健行鞋、登山杖、防曬", "note": "穿梭茶園與竹林木棧道，雲嘉平原夜景與雲海一覽無遺"},
+      {"id": 57, "code": "#057", "name": "梨子腳山 (祝壽山)", "elev": 1176, "county": "嘉義縣", "region": "南部", "diff": "低", "estTime": "1.5～2 小時", "trailhead": "梅山太平雲梯 / 三元宮茶園步道", "gear": "健行鞋、防曬帽、水壺", "note": "漫步翠綠茶園稜線，可順遊太平雲梯與太平老街"},
+      {"id": 58, "code": "#058", "name": "獨立山", "elev": 840, "county": "嘉義縣", "region": "南部", "diff": "低", "estTime": "2～2.5 小時", "trailhead": "竹崎樟腦寮車站 (O型環狀)", "gear": "健行鞋、登山杖、防蚊液", "note": "全台唯一與阿里山森林鐵道螺旋環繞交會的經典步道"},
+      {"id": 59, "code": "#059", "name": "大塔山", "elev": 2664, "county": "嘉義縣/南投縣", "region": "南部", "diff": "中", "estTime": "3.5～4.5 小時", "trailhead": "阿里山森林遊樂區沼平車站 → 塔山步道", "gear": "登山鞋、保暖外套、登山杖、充足水", "note": "全台小百岳最高峰，巨木群與大塔山斷崖雲海氣勢磅礴"},
+      {"id": 60, "code": "#060", "name": "大凍山 (糞箕山)", "elev": 1976, "county": "嘉義縣", "region": "南部", "diff": "低至中", "estTime": "2.5～3.5 小時", "trailhead": "奮起湖多林停車場 (O型環狀)", "gear": "登山鞋、防風保暖衣、登山杖", "note": "阿里山脈著名觀日出雲海勝地，柳杉林與竹林步道完善"},
+      {"id": 61, "code": "#061", "name": "大湖尖山", "elev": 1316, "county": "嘉義縣", "region": "南部", "diff": "低至中", "estTime": "2～2.5 小時", "trailhead": "番路大湖村文峰遊客中心 / 尖山步道", "gear": "健行鞋、登山杖", "note": "數千階木棧道與石階直上稜線，視野遠眺仁義潭與嘉南平原"},
+      {"id": 62, "code": "#062", "name": "紅毛埤山", "elev": 150, "county": "嘉義市", "region": "南部", "diff": "低", "estTime": "0.5 小時", "trailhead": "嘉義市蘭潭後山步道 / 崇仁護校旁", "gear": "輕便運動鞋、防蚊液", "note": "嘉義市唯一小百岳，緊鄰蘭潭風景區，輕鬆散步可達"},
+      {"id": 63, "code": "#063", "name": "大棟山", "elev": 1241, "county": "台南市/嘉義縣", "region": "南部", "diff": "低至中", "estTime": "2.5～3.5 小時", "trailhead": "白河關子嶺仙祖廟登山口", "gear": "健行鞋、登山杖、飲水", "note": "台南市最高峰，沿途多為產業道路與石階，可順遊關子嶺溫泉"},
+      {"id": 64, "code": "#064", "name": "崁頭山", "elev": 844, "county": "台南市", "region": "南部", "diff": "低", "estTime": "1.5～2 小時", "trailhead": "東山孚佑宮仙公廟登山口", "gear": "健行鞋、登山杖", "note": "步道設施完善，山頂巨石群「情人石」展望嘉南平原極佳"},
+      {"id": 65, "code": "#065", "name": "三腳南山", "elev": 1186, "county": "嘉義縣/台南市", "region": "南部", "diff": "中", "estTime": "3.5～4.5 小時", "trailhead": "楠西梅嶺福來百年老梅園登山口", "gear": "抓地登山鞋、耐磨手套、登山杖", "note": "後段為陡峭岩壁與拉繩攀爬地形，挑戰性高、視野絕佳"},
+      {"id": 66, "code": "#066", "name": "西阿里關山", "elev": 973, "county": "台南市/高雄市", "region": "南部", "diff": "低", "estTime": "1.5～2 小時", "trailhead": "南化關山里產業道路登山口", "gear": "健行鞋、防蚊液", "note": "地處偏遠幽靜，部分路線為果園產業道路接原始山徑"},
+      {"id": 67, "code": "#067", "name": "竹子尖山", "elev": 1110, "county": "台南市", "region": "南部", "diff": "低至中", "estTime": "2.5～3 小時", "trailhead": "楠西梅嶺伍龍步道 / 梅峰古道O型", "gear": "健行鞋、登山杖、水壺", "note": "冬季梅花盛開時滿山雪白，稜線可俯瞰曾文水庫全景"},
+      {"id": 68, "code": "#068", "name": "藤枝山", "elev": 1565, "county": "高雄市", "region": "南部", "diff": "低", "estTime": "1.5～2 小時", "trailhead": "藤枝國家森林遊樂區雲杉步道", "gear": "健行鞋、薄保暖外套", "note": "南台灣避暑勝地，高聳柳杉與牛樟林立，瞭望台視野遼闊"},
+      {"id": 69, "code": "#069", "name": "白雲山 (廓亭山)", "elev": 1044, "county": "高雄市", "region": "南部", "diff": "中", "estTime": "3.5～4.5 小時", "trailhead": "甲仙四德巷產業道路登山口", "gear": "登山鞋、登山杖、手套、離線地圖", "note": "路徑較原始且少人走，沿途竹林與雜木林交錯"},
+      {"id": 70, "code": "#070", "name": "刣牛湖山", "elev": 798, "county": "台南市/高雄市", "region": "南部", "diff": "低", "estTime": "1.5～2 小時", "trailhead": "南化烏山健康步道 / 龍湖寺", "gear": "健行鞋、登山杖、防曬", "note": "烏山稜線步道視野開闊，可遠眺南化水庫與高屏溪谷"},
+      {"id": 71, "code": "#071", "name": "鳴海山", "elev": 1411, "county": "高雄市", "region": "南部", "diff": "中", "estTime": "4～5 小時", "trailhead": "茂林多納林道登山口 (經網子山)", "gear": "登山鞋、登山杖、防螞蝗襪/噴霧", "note": "日治時期警備道遺跡豐富，原始森林生態完整"},
+      {"id": 72, "code": "#072", "name": "旗尾山", "elev": 315, "county": "高雄市", "region": "南部", "diff": "低至中", "estTime": "1.5～2 小時", "trailhead": "旗山第一/第三登山口 (旗靈縱走起點)", "gear": "抓地健行鞋、手套、充足飲水", "note": "千階天梯陡上與裸岩瘦稜極具特色，山頂祠堂俯瞰美濃平原"},
+      {"id": 73, "code": "#073", "name": "尾寮山", "elev": 1427, "county": "屏東縣/高雄市", "region": "南部", "diff": "中至高", "estTime": "6～7.5 小時", "trailhead": "茂林大津橋登山口 (單程9.3K)", "gear": "中高筒登山鞋、雙登山杖、1.5L以上水", "note": "南部知名百岳行前體能訓練場，長距離連續爬升超過1,300m"},
+      {"id": 74, "code": "#074", "name": "大崗山", "elev": 312, "county": "高雄市", "region": "南部", "diff": "低", "estTime": "1.5～2 小時", "trailhead": "阿蓮超峰寺 / 大崗山生態園區", "gear": "輕便健行鞋、防蚊液", "note": "特殊高位珊瑚礁石灰岩地質，擁有豐富一線天與鐘乳石洞景觀"},
+      {"id": 75, "code": "#075", "name": "觀音山", "elev": 177, "county": "高雄市", "region": "南部", "diff": "低", "estTime": "1～1.5 小時", "trailhead": "大社觀音山風景區鳳儀宮", "gear": "運動休閒鞋、防曬水壺", "note": "南台灣熱門郊山，沿途市集熱鬧，奇特泥岩惡地地形明顯"},
+      {"id": 76, "code": "#076", "name": "笠頂山", "elev": 659, "county": "屏東縣", "region": "南部", "diff": "低至中", "estTime": "2～3 小時", "trailhead": "瑪家佳義村登山口 (前山/後山線)", "gear": "健行鞋、登山杖、充足飲水", "note": "屏東最熱門郊山，前山線陡峭練腳力、後山線平緩舒適"},
+      {"id": 77, "code": "#077", "name": "壽山 (高雄山)", "elev": 356, "county": "高雄市", "region": "南部", "diff": "低", "estTime": "1.5～2.5 小時", "trailhead": "鼓山動物園 / 龍泉寺登山口", "gear": "運動健行鞋、防蚊液、水壺", "note": "高位珊瑚礁岩盤地形，隨處可見台灣獼猴（食物請勿外露）"},
+      {"id": 78, "code": "#078", "name": "棚集山", "elev": 899, "county": "屏東縣", "region": "南部", "diff": "低至中", "estTime": "2.5～3.5 小時", "trailhead": "來義丹林村登山口 (田園線/山稜線)", "gear": "健行鞋、登山杖、充足飲水", "note": "山頂腹地寬廣並設有休憩棚架，南屏東人氣訓練郊山"},
+      {"id": 79, "code": "#079", "name": "女仍山", "elev": 804, "county": "屏東縣", "region": "南部", "diff": "中", "estTime": "3～4 小時", "trailhead": "獅子鄉雙流伊屯部落登山口", "gear": "抓地登山鞋、耐磨手套、防螞蝗裝備", "note": "需多次溯溪渡過楓港溪支流並拉繩陡上，原始野趣十足"},
+      {"id": 80, "code": "#080", "name": "里龍山", "elev": 1062, "county": "屏東縣", "region": "南部", "diff": "中至高", "estTime": "5～6.5 小時", "trailhead": "獅子鄉竹坑 / 鯉龍山人文紀念館登山口", "gear": "中高筒登山鞋、手套、充足水糧", "note": "恆春半島最高峰，巨石溪谷與樹根陡坡，山頂360度看台灣海峽與太平洋"},
+      {"id": 81, "code": "#081", "name": "大山母山", "elev": 325, "county": "屏東縣", "region": "南部", "diff": "低至中", "estTime": "2～2.5 小時", "trailhead": "恆春南灣產業道路登山口", "gear": "健行鞋、防曬帽、充足飲水", "note": "台灣最南端小百岳，無遮蔽草原稜線俯瞰南灣、大尖山與巴士海峽"},
+      {"id": 82, "code": "#082", "name": "灣坑頭山", "elev": 616, "county": "宜蘭縣", "region": "東部", "diff": "低至中", "estTime": "3～4 小時", "trailhead": "大里天公廟 / 草嶺古道啞口起登", "gear": "健行鞋、防風外套、登山杖", "note": "草嶺古道最高點，秋冬銀白芒花海與龜山島海景絕美"},
+      {"id": 83, "code": "#083", "name": "三角崙山", "elev": 1029, "county": "新北市/宜蘭縣", "region": "東部", "diff": "中", "estTime": "4.5～6 小時", "trailhead": "礁溪五峰旗瀑布 → 聖母山莊登山步道", "gear": "抓地登山鞋、登山杖、防風雨衣", "note": "爆紅「抹茶山」所在，前段緩坡林道、後段1.6K連續階梯陡上"},
+      {"id": 84, "code": "#084", "name": "鵲子山 (鴻子山)", "elev": 679, "county": "宜蘭縣", "region": "東部", "diff": "中", "estTime": "3～4 小時", "trailhead": "礁溪跑馬古道 / 圓通寺登山口", "gear": "抓地登山鞋、手套、登山杖", "note": "外型似富士山被稱「礁溪富士山」，後段路徑陡峭多芒草"},
+      {"id": 85, "code": "#085", "name": "三星山", "elev": 2352, "county": "宜蘭縣", "region": "東部", "diff": "中", "estTime": "3.5～4.5 小時", "trailhead": "太平山翠峰林道5.5K登山口", "gear": "中筒登山鞋、防風雨保暖衣、手套", "note": "宜蘭著名中級山，穿越潮濕檜木與箭竹林，海拔高氣溫偏低"},
+      {"id": 86, "code": "#086", "name": "卡拉寶山", "elev": 2397, "county": "花蓮縣", "region": "東部", "diff": "低", "estTime": "1～1.5 小時", "trailhead": "中橫台8線碧綠神木停車場旁", "gear": "登山鞋、保暖防風外套", "note": "中橫公路旁高海拔小百岳，步道短而陡上，箭竹林相幽美"},
+      {"id": 87, "code": "#087", "name": "立霧山", "elev": 1274, "county": "花蓮縣", "region": "東部", "diff": "中", "estTime": "4～5 小時", "trailhead": "太魯閣得卡倫步道 → 大禮大同部落", "gear": "中筒登山鞋、登山杖、充足飲水", "note": "需先攀爬千階天梯至大禮部落，融合太魯閣族山林文化"},
+      {"id": 88, "code": "#088", "name": "初音山", "elev": 906, "county": "花蓮縣", "region": "東部", "diff": "低至中", "estTime": "2～2.5 小時", "trailhead": "吉安鄉華林園 / 楓林步道上方登山口", "gear": "健行鞋、登山杖、防蚊液", "note": "俯瞰花蓮市區、吉安平原與太平洋海岸線的絕佳觀景台"},
+      {"id": 89, "code": "#089", "name": "鯉魚山", "elev": 601, "county": "花蓮縣", "region": "東部", "diff": "低", "estTime": "1.5～2 小時", "trailhead": "壽豐鄉鯉魚潭遊客中心 / 賞鳥步道", "gear": "健行鞋、防蚊液、水壺", "note": "木棧道與土徑設施完善，山頂可同時俯瞰鯉魚潭與花東縱谷"},
+      {"id": 90, "code": "#090", "name": "月眉山", "elev": 614, "county": "花蓮縣", "region": "東部", "diff": "低", "estTime": "2～2.5 小時", "trailhead": "壽豐鄉米棧古道 / 193縣道登山口", "gear": "健行鞋、登山杖、防蚊液", "note": "海岸山脈北段最高峰，步道平緩寬大、林蔭涼爽"},
+      {"id": 91, "code": "#091", "name": "八里灣山 (貓公富士山)", "elev": 924, "county": "花蓮縣", "region": "東部", "diff": "中至高", "estTime": "5～6.5 小時", "trailhead": "豐濱鄉八里灣部落登山口", "gear": "抓地登山鞋、防螞蝗裝備、手套、頭燈", "note": "阿美族聖山，路途遙遠且需多次渡溪與陡上，具極高野性挑戰"},
+      {"id": 92, "code": "#092", "name": "萬人山", "elev": 886, "county": "花蓮縣", "region": "東部", "diff": "低", "estTime": "1.5～2 小時", "trailhead": "富里鄉六十石山金針花園區上方", "gear": "輕便健行鞋、防曬帽", "note": "每年8-9月金針花季絕美，輕鬆登頂俯瞰花東縱谷稻浪"},
+      {"id": 93, "code": "#093", "name": "都蘭山", "elev": 1190, "county": "台東縣", "region": "東部", "diff": "中", "estTime": "3.5～4.5 小時", "trailhead": "東河鄉都蘭林道4K登山口", "gear": "抓地登山鞋、手套、登山杖、防蚊", "note": "卑南與阿美族聖山，雲霧繚繞的原始闊葉林，遠眺太平洋與綠島"},
+      {"id": 94, "code": "#094", "name": "太麻里山", "elev": 1340, "county": "台東縣", "region": "東部", "diff": "低", "estTime": "0.5～1 小時", "trailhead": "太麻里金針山雙乳峰停車場旁", "gear": "輕便外套、防曬帽", "note": "開車可直達雙乳峰附近，步行15分鐘即達一等三角點，金針花季極美"},
+      {"id": 95, "code": "#095", "name": "加奈美山", "elev": 780, "county": "台東縣", "region": "東部", "diff": "低至中", "estTime": "2～2.5 小時", "trailhead": "大武鄉加津林產業道路登山口", "gear": "健行鞋、登山杖、防蚊液", "note": "林道穿行檳榔園與次生林，登頂可眺望南迴太平洋海岸"},
+      {"id": 96, "code": "#096", "name": "巴塱衛山", "elev": 325, "county": "台東縣", "region": "東部", "diff": "低", "estTime": "0.5～1 小時", "trailhead": "大武鄉南興村忘憂亭步道入口", "gear": "輕便運動鞋、防曬帽", "note": "步道平緩好走，登頂忘憂亭擁有無敵太平洋海景視野"},
+      {"id": 97, "code": "#097", "name": "紅頭山", "elev": 552, "county": "台東縣", "region": "離島", "diff": "中", "estTime": "3.5～4.5 小時", "trailhead": "蘭嶼鄉椰油村 / 紅頭村登山口", "gear": "抓地登山鞋、耐磨手套、長袖防刮", "note": "蘭嶼最高峰（達悟族聖山），熱帶雨林樹根盤錯濕滑，需專人或熟路者帶領"},
+      {"id": 98, "code": "#098", "name": "雲台山", "elev": 248, "county": "連江縣", "region": "離島", "diff": "低", "estTime": "0.2～0.5 小時", "trailhead": "南竿鄉雲台山軍情館觀景台旁", "gear": "輕便休閒鞋", "note": "馬祖南竿第一高峰，車道直達觀景台旁，俯瞰馬祖列島海景"},
+      {"id": 99, "code": "#099", "name": "太武山", "elev": 253, "county": "金門縣", "region": "離島", "diff": "低", "estTime": "1.5～2 小時", "trailhead": "金湖鎮玉章路牌樓登山口", "gear": "運動休閒鞋、防曬水壺", "note": "金門最高峰，全程寬大柏油坡道，必訪「毋忘在莒」勒石與海印寺"},
+      {"id": 100, "code": "#100", "name": "蛇頭山", "elev": 20, "county": "澎湖縣", "region": "離島", "diff": "低", "estTime": "0.2～0.5 小時", "trailhead": "馬公市風櫃尾蛇頭山遊憩區", "gear": "輕便休閒鞋、防曬帽", "note": "全台海拔最低小百岳，輕鬆漫步觀賞荷蘭城堡遺址與馬公港海景"}
+    ];
+
+    const LOCAL_STORAGE_KEY = "tw_100_small_peaks_records_v2";
+    const CLOUD_CONFIG_STORAGE_KEY = "tw_100_small_peaks_cloud_cfg_v1";
+    const CLOUD_ROOM_STORAGE_KEY = "tw_100_small_peaks_cloud_room_v1";
+    let userRecords = {};
+    let db = null;
+    let auth = null;
+    let currentUser = null;
+    let isCloudActive = false;
+    let unsubscribeSnapshot = null;
+    let memoryFallbackRecords = {};
+
+    const appId = typeof __app_id !== "undefined" ? __app_id : "tw-100-peaks-github";
+    let activeCollectionName = "taiwan_100_small_peaks_shared";
+
+    function loadSavedCloudOverride() {
+      let savedRoom = "";
+      let savedCfg = null;
       try {
-        var raw = localStorage.getItem(STORAGE_KEY);
-        if (raw) {
-          var parsed = JSON.parse(raw);
-          if (Array.isArray(parsed)) {
-            userLogs = parsed;
-          }
+        savedRoom = (window.localStorage.getItem(CLOUD_ROOM_STORAGE_KEY) || "").trim();
+        const rawCfg = window.localStorage.getItem(CLOUD_CONFIG_STORAGE_KEY);
+        if (rawCfg) {
+          savedCfg = JSON.parse(rawCfg);
         }
       } catch (e) {
-        userLogs = [];
+        // Ignore storage read error
+      }
+      return { savedRoom, savedCfg };
+    }
+
+    function parseFirebaseConfigText(rawText) {
+      if (!rawText || !rawText.trim()) return null;
+      const trimmed = rawText.trim();
+      try {
+        return JSON.parse(trimmed);
+      } catch (e) {
+        const objMatch = trimmed.match(/\{[\s\S]*\}/);
+        if (!objMatch) return null;
+        const normalized = objMatch[0]
+          .replace(/(\w+)\s*:/g, '"$1":')
+          .replace(/'/g, '"')
+          .replace(/,\s*}/g, "}");
+        return JSON.parse(normalized);
       }
     }
 
-    function saveLogs() {
+    function openCloudModal() {
+      const { savedRoom, savedCfg } = loadSavedCloudOverride();
+      document.getElementById("cloudRoomInput").value = savedRoom || "taiwan_100_small_peaks_shared";
+      const displayCfg = savedCfg || CUSTOM_FIREBASE_CONFIG;
+      document.getElementById("cloudConfigInput").value = displayCfg ? JSON.stringify(displayCfg, null, 2) : "";
+      document.getElementById("cloudFeedbackText").textContent = isCloudActive
+        ? `目前狀態：已連線至「${activeCollectionName}」即時同步中`
+        : "目前狀態：尚未設定自訂 Firebase，使用本機快取模式";
+      document.getElementById("cloudModal").classList.remove("hidden");
+    }
+
+    function closeCloudModal() {
+      document.getElementById("cloudModal").classList.add("hidden");
+    }
+        }
+      } catch (e) {
+        console.warn("讀取本機快取失敗，改用記憶體快取:", e);
+      }
+      userRecords = { ...memoryFallbackRecords };
+    }
+
+    function saveLocalRecords() {
+      memoryFallbackRecords = { ...userRecords };
       try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(userLogs));
-      } catch (e) {}
+        window.localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(userRecords));
+      } catch (e) {
+        console.warn("儲存本機快取失敗，已保留於目前工作階段:", e);
+      }
+    }
+
+    function saveLocalRecords() {
+      try {
+        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(userRecords));
+      } catch (e) {
+        console.warn("儲存本機快取失敗:", e);
+      }
+    }
+
+    function showToast(msg) {
+      const el = document.getElementById("toastBanner");
+      if (!el) return;
+      el.textContent = msg;
+      el.classList.remove("hidden");
+      clearTimeout(el._timer);
+      el._timer = setTimeout(() => {
+        el.classList.add("hidden");
+      }, 3000);
+    }
+
+    function updateSyncStatus(state, detailText) {
+      const badge = document.getElementById("syncStatusBadge");
+      const subHint = document.getElementById("syncSubHint");
+      if (!badge) return;
+      if (state === "live") {
+        badge.className = "inline-flex items-center gap-1.5 px-2.5 py-0.5 text-[11px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-full";
+        badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>${detailText || "多人雲端即時同步中"}`;
+        if (subHint) subHint.textContent = "多人共用雲端模式：他人亦可即時查詢與編輯同步";
+      } else if (state === "saving") {
+        badge.className = "inline-flex items-center gap-1.5 px-2.5 py-0.5 text-[11px] font-semibold bg-sky-50 text-sky-800 border border-sky-200 rounded-full";
+        badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-sky-500 animate-ping"></span>${detailText || "儲存中..."}`;
+      } else {
+        badge.className = "inline-flex items-center gap-1.5 px-2.5 py-0.5 text-[11px] font-semibold bg-amber-50 text-amber-800 border border-amber-200 rounded-full";
+        badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>${detailText || "本機瀏覽器模式"}`;
+        if (subHint) subHint.textContent = "本機儲存模式：資料存於目前瀏覽器（若需多人共用請設定 Firebase）";
+      }
+    }
+
+    async function initDataLayer() {
+      // 先載入本機快取，確保任何環境開啟瞬間就有完整畫面
+      loadLocalRecords();
+      renderAll();
+
+      if (typeof unsubscribeSnapshot === "function") {
+        unsubscribeSnapshot();
+        unsubscribeSnapshot = null;
+      }
+
+      const { savedRoom, savedCfg } = loadSavedCloudOverride();
+      activeCollectionName = (savedRoom || "taiwan_100_small_peaks_shared").replace(/[^a-zA-Z0-9_-]/g, "_");
+
+      // 偵測是否有環境內建 Firebase 或使用者自行填入的設定
+      let activeConfig = null;
+      if (savedCfg && typeof savedCfg === "object" && savedCfg.apiKey && savedCfg.projectId) {
+        activeConfig = savedCfg;
+      } else if (typeof __firebase_config !== "undefined" && __firebase_config) {
+        activeConfig = typeof __firebase_config === "string"
+          ? JSON.parse(__firebase_config)
+          : __firebase_config;
+      } else if (CUSTOM_FIREBASE_CONFIG && typeof CUSTOM_FIREBASE_CONFIG === "object" && CUSTOM_FIREBASE_CONFIG.apiKey) {
+        activeConfig = CUSTOM_FIREBASE_CONFIG;
+      }
+
+      if (!activeConfig) {
+        isCloudActive = false;
+        updateSyncStatus("local", "即時查詢與本機儲存就緒");
+        return;
+      }
+
+      try {
+        const app = initializeApp(activeConfig, "peaks_sync_app");
+        auth = getAuth(app);
+        db = getFirestore(app);
+
+        if (typeof __initial_auth_token !== "undefined" && __initial_auth_token) {
+          await signInWithCustomToken(auth, __initial_auth_token);
+        } else {
+          await signInAnonymously(auth);
+        }
+
+        currentUser = auth.currentUser;
+        if (!currentUser) {
+          isCloudActive = false;
+          updateSyncStatus("local", "即時查詢與本機儲存就緒");
+          return;
+        }
+
+        isCloudActive = true;
+        const sharedColRef = collection(db, "artifacts", appId, "public", "data", activeCollectionName);
+        unsubscribeSnapshot = onSnapshot(
+          sharedColRef,
+          (snapshot) => {
+            const nextRecords = {};
+            snapshot.forEach((docSnap) => {
+              const data = docSnap.data();
+              const peakId = Number(docSnap.id);
+              if (!isNaN(peakId) && data) {
+                nextRecords[peakId] = {
+                  status: data.status === "已完登" ? "已完登" : "未完成",
+                  date: data.date || "",
+                  startTime: data.startTime || "",
+                  endTime: data.endTime || "",
+                  participants: data.participants || "",
+                  transport: data.transport || "",
+                  memo: data.memo || ""
+                };
+              }
+            });
+            userRecords = nextRecords;
+            saveLocalRecords();
+            updateSyncStatus("live", "多人即時雲端同步中");
+            renderAll();
+          },
+          (error) => {
+            console.warn("雲端監聽切換為本機模式:", error);
+            isCloudActive = false;
+            updateSyncStatus("local", "即時查詢與本機儲存就緒");
+          }
+        );
+      } catch (err) {
+        console.warn("雲端初始化未啟用，使用本機儲存模式:", err);
+        isCloudActive = false;
+        updateSyncStatus("local", "即時查詢與本機儲存就緒");
+      }
+    }
+
+    async function saveRecord(peakId, recordObj) {
+      userRecords[peakId] = recordObj;
+      saveLocalRecords();
+      renderAll();
+
+      if (!isCloudActive || !db || !currentUser) {
+        updateSyncStatus("local", "已即時儲存");
+        return;
+      }
+
+      try {
+        updateSyncStatus("saving", "正在即時寫入雲端...");
+        const docRef = doc(db, "artifacts", appId, "public", "data", activeCollectionName, String(peakId));
+        await setDoc(docRef, {
+          ...recordObj,
+          updatedBy: currentUser.uid,
+          updatedAt: new Date().toISOString()
+        });
+        updateSyncStatus("live", "已即時儲存並同步");
+      } catch (err) {
+        console.error("雲端寫入失敗:", err);
+        updateSyncStatus("local", "已儲存於本機");
+      }
+    }
+
+    async function deleteRecord(peakId) {
+      delete userRecords[peakId];
+      saveLocalRecords();
+      renderAll();
+
+      if (!isCloudActive || !db || !currentUser) {
+        updateSyncStatus("local", "已更新紀錄");
+        return;
+      }
+
+      try {
+        updateSyncStatus("saving", "正在清除紀錄...");
+        const docRef = doc(db, "artifacts", appId, "public", "data", activeCollectionName, String(peakId));
+        await deleteDoc(docRef);
+        updateSyncStatus("live", "已即時儲存並同步");
+      } catch (err) {
+        console.error("雲端刪除失敗:", err);
+        updateSyncStatus("local", "已更新紀錄");
+      }
     }
 
     function pad2(n) {
       return n < 10 ? "0" + n : String(n);
     }
 
-    function esc(str) {
-      if (str === null || str === undefined) return "";
-      return String(str)
+    function buildTimeOptions() {
+      let html = '<option value="">-- 選擇時間 --</option>';
+      for (let h = 0; h < 24; h++) {
+        for (const m of [0, 15, 30, 45]) {
+          const val = `${pad2(h)}:${pad2(m)}`;
+          html += `<option value="${val}">${val}</option>`;
+        }
+      }
+      document.getElementById("mStart").innerHTML = html;
+      document.getElementById("mEnd").innerHTML = html;
+    }
+
+    function buildPeakDropdown() {
+      let html = "";
+      for (const p of PEAKS_DB) {
+        const st = userRecords[p.id] ? userRecords[p.id].status : "";
+        const suffix = st === "已完登" ? " [已完登]" : "";
+        html += `<option value="${p.id}">${p.code} ${p.name} (${p.county} • ${p.elev}m)${suffix}</option>`;
+      }
+      document.getElementById("mPeakSelect").innerHTML = html;
+    }
+
+    function calcHours(startStr, endStr) {
+      if (!startStr || !endStr) return null;
+      const [sh, sm] = startStr.split(":").map(Number);
+      const [eh, em] = endStr.split(":").map(Number);
+      let sMins = sh * 60 + sm;
+      let eMins = eh * 60 + em;
+      if (eMins < sMins) eMins += 24 * 60;
+      return Math.round(((eMins - sMins) / 60) * 100) / 100;
+    }
+
+    function countPeople(str) {
+      if (!str || !str.trim()) return 0;
+      return str.trim().split(/[、,，;；\s]+/).filter(Boolean).length;
+    }
+
+    function escapeHtml(text) {
+      if (!text) return "";
+      return String(text)
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
         .replace(/>/g, "&gt;")
         .replace(/"/g, "&quot;");
     }
 
-    function getPeakById(id) {
-      for (var i = 0; i < PEAKS_DB.length; i++) {
-        if (PEAKS_DB[i].id === id) return PEAKS_DB[i];
-      }
-      return PEAKS_DB[0];
+    function getDiffBadge(diff) {
+      const map = {
+        "低": "bg-emerald-100 text-emerald-800",
+        "低至中": "bg-sky-100 text-sky-800",
+        "中": "bg-amber-100 text-amber-800",
+        "中至高": "bg-orange-100 text-orange-800",
+        "高": "bg-rose-100 text-rose-800"
+      };
+      return `<span class="inline-block px-2 py-0.5 rounded-md text-[11px] font-semibold whitespace-nowrap ${map[diff] || "bg-zinc-100 text-zinc-700"}">${escapeHtml(diff)}</span>`;
     }
 
-    function calcDuration(s, e) {
-      if (!s || !e) return null;
-      var sp = s.split(":");
-      var ep = e.split(":");
-      var sm = parseInt(sp[0], 10) * 60 + parseInt(sp[1], 10);
-      var em = parseInt(ep[0], 10) * 60 + parseInt(ep[1], 10);
-      if (em < sm) em += 24 * 60;
-      return Math.round(((em - sm) / 60) * 100) / 100;
+    function getStatusBadge(status) {
+      if (status === "已完登") {
+        return `<span class="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-800 whitespace-nowrap">已完登</span>`;
+      }
+      return `<span class="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-zinc-100 text-zinc-500 whitespace-nowrap">未完成</span>`;
     }
 
-    function countPeople(str) {
-      if (!str) return 0;
-      var t = str.replace(/^\s+|\s+$/g, "");
-      if (!t) return 0;
-      var parts = t.split(/[、,，;；\s]+/);
-      var c = 0;
-      for (var i = 0; i < parts.length; i++) {
-        if (parts[i].replace(/^\s+|\s+$/g, "") !== "") c++;
-      }
-      return c;
-    }
+    function renderAll() {
+      const kw = document.getElementById("filterSearch").value.trim().toLowerCase();
+      const reg = document.getElementById("filterRegion").value;
+      const diff = document.getElementById("filterDiff").value;
+      const stat = document.getElementById("filterStatus").value;
 
-    function showToast(msg) {
-      var banner = document.getElementById("toastBanner");
-      document.getElementById("toastMsg").textContent = msg;
-      banner.classList.add("show");
-    }
+      const isDefaultView = (kw === "" && reg === "ALL" && diff === "ALL" && stat === "RECORDED");
+      const resetBtn = document.getElementById("btnResetFilter");
+      if (!isDefaultView) resetBtn.classList.remove("hidden");
+      else resetBtn.classList.add("hidden");
 
-    function initDropdowns() {
-      // 1. 100 座小百岳下拉選單
-      var pHtml = "";
-      for (var i = 0; i < PEAKS_DB.length; i++) {
-        var p = PEAKS_DB[i];
-        pHtml += '<option value="' + p.id + '">' + p.code + ' ' + p.name + '（' + p.county + ' • ' + p.elev + 'm）</option>';
-      }
-      document.getElementById("selPeak").innerHTML = pHtml;
+      const tbody = document.getElementById("tableBody");
+      let rowsHtml = "";
+      let visible = 0;
 
-      // 2. 起訖時間下拉選單 (00:00 ~ 23:45 每 15 分鐘)
-      var tHtml = '<option value="">-- 選擇時間 --</option>';
-      for (var h = 0; h < 24; h++) {
-        var mins = [0, 15, 30, 45];
-        for (var m = 0; m < mins.length; m++) {
-          var v = pad2(h) + ":" + pad2(mins[m]);
-          tHtml += '<option value="' + v + '">' + v + '</option>';
-        }
-      }
-      document.getElementById("inpStart").innerHTML = tHtml;
-      document.getElementById("inpEnd").innerHTML = tHtml;
+      for (const p of PEAKS_DB) {
+        const rawRec = userRecords[p.id];
+        const hasAnyRecord = Boolean(
+          rawRec && (
+            rawRec.status === "已完登" ||
+            rawRec.date ||
+            rawRec.startTime ||
+            rawRec.endTime ||
+            rawRec.participants ||
+            rawRec.transport ||
+            rawRec.memo
+          )
+        );
+        const normalizedStatus = rawRec && rawRec.status === "已完登" ? "已完登" : "未完成";
+        const rec = rawRec ? { ...rawRec, status: normalizedStatus } : {
+          status: "未完成", date: "", startTime: "", endTime: "",
+          participants: "", transport: "", memo: ""
+        };
 
-      // 預設今日日期
-      document.getElementById("inpDate").value = new Date().toISOString().slice(0, 10);
-      updatePeakPreview();
-    }
-
-    function updatePeakPreview() {
-      var pid = parseInt(document.getElementById("selPeak").value, 10);
-      var p = getPeakById(pid);
-      document.getElementById("prevTitle").textContent = p.code + " " + p.name + " (" + p.elev.toLocaleString() + "m)";
-      document.getElementById("prevCounty").textContent = p.county + " (" + p.region + ")";
-      document.getElementById("prevDiff").textContent = p.diff;
-      document.getElementById("prevEst").textContent = p.estTime;
-      document.getElementById("prevTrail").textContent = p.trailhead;
-      document.getElementById("prevGear").textContent = p.gear + "（" + p.note + "）";
-    }
-
-    function updateFormCalculations() {
-      var s = document.getElementById("inpStart").value;
-      var e = document.getElementById("inpEnd").value;
-      var dur = calcDuration(s, e);
-      document.getElementById("calcHoursText").textContent = dur !== null ? dur.toFixed(2) + " 小時" : "尚未選擇起訖時間";
-
-      var ppl = document.getElementById("inpParticipants").value;
-      document.getElementById("calcPeopleText").textContent = countPeople(ppl) + " 人";
-    }
-
-    function resetFormToNew(presetPeakId) {
-      document.getElementById("editingLogId").value = "";
-      document.getElementById("formModeTitle").textContent = "📝 新增完登 / 出團紀錄";
-      if (presetPeakId) {
-        document.getElementById("selPeak").value = String(presetPeakId);
-      }
-      document.getElementById("inpStatus").value = "已完登";
-      document.getElementById("inpDate").value = new Date().toISOString().slice(0, 10);
-      document.getElementById("inpStart").value = "";
-      document.getElementById("inpEnd").value = "";
-      document.getElementById("inpParticipants").value = "";
-      document.getElementById("inpTransport").value = "";
-      document.getElementById("inpMemo").value = "";
-      updatePeakPreview();
-      updateFormCalculations();
-    }
-
-    function renderAllViews() {
-      // 計算統計指標與每座山的最新狀態
-      var donePeakMap = {};
-      var plannedPeakMap = {};
-      var totalHours = 0;
-      var totalPeople = 0;
-
-      for (var i = 0; i < userLogs.length; i++) {
-        var lg = userLogs[i];
-        if (lg.status === "已完登") {
-          donePeakMap[lg.peakId] = true;
-        } else if (lg.status === "計畫中") {
-          plannedPeakMap[lg.peakId] = true;
-        }
-        var d = calcDuration(lg.startTime, lg.endTime);
-        if (d !== null) totalHours += d;
-        totalPeople += countPeople(lg.participants);
-      }
-
-      var doneCount = Object.keys(donePeakMap).length;
-      var plannedCount = 0;
-      for (var pidKey in plannedPeakMap) {
-        if (!donePeakMap[pidKey]) plannedCount++;
-      }
-
-      var pct = ((doneCount / 100) * 100).toFixed(1);
-      document.getElementById("kpiDone").textContent = doneCount;
-      document.getElementById("kpiPct").textContent = pct + "%";
-      document.getElementById("kpiBar").style.width = pct + "%";
-      document.getElementById("kpiHours").textContent = totalHours.toFixed(1);
-      document.getElementById("kpiPeople").textContent = totalPeople;
-      document.getElementById("kpiTripsCount").textContent = userLogs.length;
-      document.getElementById("kpiPlanned").textContent = plannedCount;
-
-      // 渲染區塊 3：「我的已完登 / 出團紀錄明細」
-      document.getElementById("myLogsCountBadge").textContent = "目前共 " + userLogs.length + " 筆紀錄";
-      var myBody = document.getElementById("myLogsTableBody");
-      if (userLogs.length === 0) {
-        myBody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:32px; color:var(--text-muted);">目前尚無任何紀錄。請在上方表單選擇山岳並按下「💾 儲存這筆紀錄」，資料就會立刻出現在這裡！</td></tr>';
-      } else {
-        var mHtml = "";
-        // 最新新增的顯示在最上方
-        for (var j = userLogs.length - 1; j >= 0; j--) {
-          var item = userLogs[j];
-          var pk = getPeakById(item.peakId);
-          var dur = calcDuration(item.startTime, item.endTime);
-          var hc = countPeople(item.participants);
-          var stBadge = item.status === "已完登"
-            ? '<span class="badge b-done">✅ 已完登</span>'
-            : '<span class="badge b-plan">🗓️ 計畫中</span>';
-          var timeRange = (item.startTime && item.endTime) ? esc(item.startTime) + " ~ " + esc(item.endTime) : "—";
-          var durStr = dur !== null ? "<strong>" + dur.toFixed(2) + " 小時</strong>" : "—";
-          var pplStr = hc > 0 ? esc(item.participants) + ' <span style="color:var(--primary); font-weight:700;">(' + hc + '人)</span>' : "—";
-
-          mHtml += '<tr>' +
-            '<td style="white-space:nowrap;"><strong>' + esc(pk.code) + ' ' + esc(pk.name) + '</strong></td>' +
-            '<td>' + stBadge + '</td>' +
-            '<td style="white-space:nowrap;">' + esc(item.date || "—") + '</td>' +
-            '<td style="white-space:nowrap;">' + timeRange + '</td>' +
-            '<td style="white-space:nowrap;">' + durStr + '</td>' +
-            '<td>' + pplStr + '</td>' +
-            '<td>' + esc(item.transport || "—") + '</td>' +
-            '<td>' + esc(item.memo || "—") + '</td>' +
-            '<td style="text-align:right; white-space:nowrap;">' +
-              '<button type="button" class="btn btn-sm btn-outline btn-edit-log" data-log-id="' + esc(item.logId) + '">編輯</button> ' +
-              '<button type="button" class="btn btn-sm btn-danger btn-del-log" data-log-id="' + esc(item.logId) + '">刪除</button>' +
-            '</td>' +
-          '</tr>';
-        }
-        myBody.innerHTML = mHtml;
-      }
-
-      // 渲染區塊 4：「全台 100 座小百岳資料庫與查詢」
-      renderDatabaseTable(donePeakMap, plannedPeakMap);
-    }
-
-    function renderDatabaseTable(donePeakMap, plannedPeakMap) {
-      if (!donePeakMap) {
-        donePeakMap = {};
-        plannedPeakMap = {};
-        for (var i = 0; i < userLogs.length; i++) {
-          if (userLogs[i].status === "已完登") donePeakMap[userLogs[i].peakId] = true;
-          else if (userLogs[i].status === "計畫中") plannedPeakMap[userLogs[i].peakId] = true;
-        }
-      }
-
-      var kw = document.getElementById("qKeyword").value.replace(/^\s+|\s+$/g, "").toLowerCase();
-      var reg = document.getElementById("qRegion").value;
-      var diff = document.getElementById("qDiff").value;
-      var stFilter = document.getElementById("qStatus").value;
-
-      var dbBody = document.getElementById("peaksDbTableBody");
-      var rows = "";
-      var count = 0;
-
-      for (var k = 0; k < PEAKS_DB.length; k++) {
-        var p = PEAKS_DB[k];
-        var pStatus = "未完成";
-        if (donePeakMap[p.id]) pStatus = "已完登";
-        else if (plannedPeakMap[p.id]) pStatus = "計畫中";
-
+        if (stat === "RECORDED" && !hasAnyRecord) continue;
+        if (stat !== "ALL" && stat !== "RECORDED" && rec.status !== stat) continue;
         if (reg !== "ALL" && p.region !== reg) continue;
         if (diff !== "ALL" && p.diff !== diff) continue;
-        if (stFilter !== "ALL" && pStatus !== stFilter) continue;
 
         if (kw !== "") {
-          var hay = (p.code + " " + p.name + " " + p.county + " " + p.region + " " + p.trailhead + " " + p.gear + " " + p.note).toLowerCase();
-          if (hay.indexOf(kw) === -1) continue;
+          const hay = `${p.code} ${p.name} ${p.county} ${p.trailhead} ${rec.participants} ${rec.transport} ${rec.memo}`.toLowerCase();
+          if (!hay.includes(kw)) continue;
         }
 
-        count++;
-        var rowCls = pStatus === "已完登" ? "is-done" : (pStatus === "計畫中" ? "is-planned" : "");
-        var stHtml = pStatus === "已完登"
-          ? '<span class="badge b-done">✅ 已完登</span>'
-          : (pStatus === "計畫中" ? '<span class="badge b-plan">🗓️ 計畫中</span>' : '<span class="badge b-none">未完成</span>');
+        visible++;
+        const dur = calcHours(rec.startTime, rec.endTime);
+        const hc = countPeople(rec.participants);
 
-        rows += '<tr class="' + rowCls + '">' +
-          '<td style="font-family:monospace; font-weight:700; color:var(--text-muted); white-space:nowrap;">' + esc(p.code) + '</td>' +
-          '<td style="white-space:nowrap;"><strong>' + esc(p.name) + '</strong> <span style="font-size:12px; color:var(--text-muted);">(' + p.elev.toLocaleString() + 'm)</span></td>' +
-          '<td style="white-space:nowrap;">' + esc(p.county) + ' <span style="font-size:11px; color:var(--text-muted);">(' + esc(p.region) + ')</span></td>' +
-          '<td><span class="badge b-diff">' + esc(p.diff) + '</span></td>' +
-          '<td style="white-space:nowrap;">' + esc(p.estTime) + '</td>' +
-          '<td>' + esc(p.trailhead) + '</td>' +
-          '<td>' + esc(p.gear) + '</td>' +
-          '<td>' + stHtml + '</td>' +
-          '<td style="text-align:right; white-space:nowrap;">' +
-            '<button type="button" class="btn btn-sm btn-primary btn-quick-add" data-peak-id="' + p.id + '">＋ 紀錄此山</button>' +
-          '</td>' +
-        '</tr>';
+        const rowCls = rec.status === "已完登"
+          ? "bg-emerald-50/50 hover:bg-emerald-100/50 transition cursor-pointer"
+          : "hover:bg-zinc-50 transition cursor-pointer";
+
+        let dtHtml = '<span class="text-zinc-300">—</span>';
+        if (rec.date || (rec.startTime && rec.endTime)) {
+          dtHtml = `<div class="font-semibold text-zinc-900 text-xs">${escapeHtml(rec.date || "未設日期")}</div>`;
+          if (rec.startTime && rec.endTime) {
+            dtHtml += `<div class="text-[11px] text-zinc-500">${escapeHtml(rec.startTime)}–${escapeHtml(rec.endTime)} (${dur.toFixed(1)}h)</div>`;
+          }
+        }
+
+        const notesArr = [];
+        if (hc > 0) notesArr.push(`${rec.participants} (${hc}人)`);
+        if (rec.transport) notesArr.push(rec.transport);
+        if (rec.memo) notesArr.push(rec.memo);
+        const noteHtml = notesArr.length > 0
+          ? `<div class="max-w-[210px] truncate text-xs text-zinc-700" title="${escapeHtml(notesArr.join(" · "))}">${escapeHtml(notesArr.join(" · "))}</div>`
+          : '<span class="text-zinc-300">—</span>';
+
+        rowsHtml += `
+          <tr class="${rowCls}" data-peak-id="${p.id}">
+            <td class="py-3 px-3.5 font-mono text-xs font-semibold text-zinc-500 whitespace-nowrap">${escapeHtml(p.code)}</td>
+            <td class="py-3 px-3.5">
+              <div>
+                <span class="font-bold text-zinc-900 text-sm">${escapeHtml(p.name)}</span>
+                <span class="font-mono text-xs text-zinc-400 ml-1.5">${p.elev.toLocaleString()}m</span>
+              </div>
+              <div class="text-xs text-zinc-500 mt-0.5 max-w-[260px] truncate" title="${escapeHtml(p.trailhead)}">${escapeHtml(p.trailhead)}</div>
+            </td>
+            <td class="py-3 px-3.5 whitespace-nowrap hidden sm:table-cell">
+              <div class="font-medium text-zinc-800 text-xs">${escapeHtml(p.county)}</div>
+              <div class="text-[11px] text-zinc-400">${escapeHtml(p.region)}</div>
+            </td>
+            <td class="py-3 px-3.5 text-center">${getDiffBadge(p.diff)}</td>
+            <td class="py-3 px-3.5 text-center text-xs text-zinc-600 whitespace-nowrap hidden md:table-cell">${escapeHtml(p.estTime)}</td>
+            <td class="py-3 px-3.5 text-center">${getStatusBadge(rec.status)}</td>
+            <td class="py-3 px-3.5 whitespace-nowrap hidden lg:table-cell">${dtHtml}</td>
+            <td class="py-3 px-3.5 hidden xl:table-cell">${noteHtml}</td>
+            <td class="py-3 px-3.5 text-right whitespace-nowrap">
+              <button type="button" data-peak-id="${p.id}"
+                class="px-2.5 py-1 rounded-lg bg-white hover:bg-zinc-100 text-zinc-700 border border-zinc-200 text-xs font-semibold cursor-pointer">
+                編輯
+              </button>
+            </td>
+          </tr>
+        `;
       }
 
-      if (count === 0) {
-        rows = '<tr><td colspan="9" style="text-align:center; padding:36px; color:var(--text-muted);">查無符合條件的小百岳，請調整條件後再按「🔍 查詢」或「重設」。</td></tr>';
+      if (visible === 0) {
+        const emptyMsg = stat === "RECORDED" && !kw && reg === "ALL" && diff === "ALL"
+          ? '目前尚未新增任何完登紀錄。請點擊右上角「＋ 新增完登紀錄」，或點選「瀏覽全部 100 座」查詢名錄。'
+          : '找不到符合條件的小百岳，請嘗試調整搜尋關鍵字或篩選條件。';
+        rowsHtml = `<tr><td colspan="9" class="text-center py-12 px-4 text-zinc-400 text-xs">${emptyMsg}</td></tr>`;
       }
 
-      dbBody.innerHTML = rows;
-      document.getElementById("dbVisibleCount").textContent = count;
+      tbody.innerHTML = rowsHtml;
+      document.getElementById("visibleCount").textContent = visible;
+      updateKPIsAndStats();
     }
 
-    // 綁定所有事件
-    document.addEventListener("DOMContentLoaded", function() {
-      loadLogs();
-      initDropdowns();
-      renderAllViews();
+    function updateKPIsAndStats() {
+      let done = 0;
+      let hours = 0;
+      let people = 0;
 
-      // 頂部「＋ 新增 / 編輯完登紀錄」按鈕：展開並捲動到表單
-      document.getElementById("btnToggleForm").addEventListener("click", function() {
-        var sec = document.getElementById("recordFormSection");
-        sec.classList.remove("hidden");
-        resetFormToNew();
-        sec.scrollIntoView({ behavior: "smooth" });
-      });
+      const regions = ["北部", "桃竹苗", "中部", "南部", "東部", "離島"];
+      const regStats = {};
+      for (const r of regions) regStats[r] = { total: 0, done: 0 };
 
-      document.getElementById("btnHideForm").addEventListener("click", function() {
-        document.getElementById("recordFormSection").classList.add("hidden");
-      });
+      const diffs = ["低", "低至中", "中", "中至高", "高"];
+      const diffStats = {};
+      for (const d of diffs) diffStats[d] = { total: 0, done: 0 };
 
-      document.getElementById("btnCloseToast").addEventListener("click", function() {
-        document.getElementById("toastBanner").classList.remove("show");
-      });
+      const activeTrips = [];
 
-      // 表單欄位即時連動
-      document.getElementById("selPeak").addEventListener("change", updatePeakPreview);
-      document.getElementById("inpStart").addEventListener("change", updateFormCalculations);
-      document.getElementById("inpEnd").addEventListener("change", updateFormCalculations);
-      document.getElementById("inpParticipants").addEventListener("input", updateFormCalculations);
+      for (const p of PEAKS_DB) {
+        regStats[p.region].total++;
+        diffStats[p.diff].total++;
 
-      document.getElementById("btnResetForm").addEventListener("click", function() {
-        resetFormToNew();
-      });
-
-      // 儲存紀錄按鈕
-      document.getElementById("btnSaveLog").addEventListener("click", function() {
-        var editId = document.getElementById("editingLogId").value;
-        var peakId = parseInt(document.getElementById("selPeak").value, 10);
-        var status = document.getElementById("inpStatus").value;
-        var date = document.getElementById("inpDate").value;
-        var startTime = document.getElementById("inpStart").value;
-        var endTime = document.getElementById("inpEnd").value;
-        var participants = document.getElementById("inpParticipants").value.replace(/^\s+|\s+$/g, "");
-        var transport = document.getElementById("inpTransport").value.replace(/^\s+|\s+$/g, "");
-        var memo = document.getElementById("inpMemo").value.replace(/^\s+|\s+$/g, "");
-
-        var pk = getPeakById(peakId);
-
-        if (editId) {
-          for (var i = 0; i < userLogs.length; i++) {
-            if (userLogs[i].logId === editId) {
-              userLogs[i].peakId = peakId;
-              userLogs[i].status = status;
-              userLogs[i].date = date;
-              userLogs[i].startTime = startTime;
-              userLogs[i].endTime = endTime;
-              userLogs[i].participants = participants;
-              userLogs[i].transport = transport;
-              userLogs[i].memo = memo;
-              break;
-            }
+        const rec = userRecords[p.id];
+        if (rec) {
+          const isDone = rec.status === "已完登";
+          if (isDone) {
+            done++;
+            regStats[p.region].done++;
+            diffStats[p.diff].done++;
           }
-          showToast("✅ 已更新「" + pk.code + " " + pk.name + "」的紀錄！請查看下方「我的已完登 / 出團紀錄明細」。");
-        } else {
-          userLogs.push({
-            logId: "log_" + Date.now() + "_" + Math.floor(Math.random() * 1000),
-            peakId: peakId,
-            status: status,
-            date: date,
-            startTime: startTime,
-            endTime: endTime,
-            participants: participants,
-            transport: transport,
-            memo: memo
-          });
-          showToast("✅ 已新增「" + pk.code + " " + pk.name + "」至下方「我的已完登 / 出團紀錄明細」！");
+
+          const dur = calcHours(rec.startTime, rec.endTime);
+          if (dur !== null) hours += dur;
+
+          const hc = countPeople(rec.participants);
+          people += hc;
+
+          if (isDone || rec.date || rec.participants || rec.transport || rec.memo) {
+            activeTrips.push({
+              peak: p,
+              rec: { ...rec, status: isDone ? "已完登" : "未完成" },
+              dur,
+              hc
+            });
+          }
         }
-
-        saveLogs();
-        resetFormToNew();
-        renderAllViews();
-        document.getElementById("myLogsSection").scrollIntoView({ behavior: "smooth" });
-      });
-
-      // 我的紀錄明細表：編輯與刪除按鈕
-      document.getElementById("myLogsTableBody").addEventListener("click", function(e) {
-        var target = e.target;
-        if (target.classList.contains("btn-edit-log")) {
-          var lid = target.getAttribute("data-log-id");
-          for (var i = 0; i < userLogs.length; i++) {
-            if (userLogs[i].logId === lid) {
-              var item = userLogs[i];
-              document.getElementById("recordFormSection").classList.remove("hidden");
-              document.getElementById("editingLogId").value = item.logId;
-              document.getElementById("formModeTitle").textContent = "✏️ 正在編輯紀錄（修改後請按儲存）";
-              document.getElementById("selPeak").value = String(item.peakId);
-              document.getElementById("inpStatus").value = item.status;
-              document.getElementById("inpDate").value = item.date || "";
-              document.getElementById("inpStart").value = item.startTime || "";
-              document.getElementById("inpEnd").value = item.endTime || "";
-              document.getElementById("inpParticipants").value = item.participants || "";
-              document.getElementById("inpTransport").value = item.transport || "";
-              document.getElementById("inpMemo").value = item.memo || "";
-              updatePeakPreview();
-              updateFormCalculations();
-              document.getElementById("recordFormSection").scrollIntoView({ behavior: "smooth" });
-              break;
-            }
-          }
-        } else if (target.classList.contains("btn-del-log")) {
-          var delId = target.getAttribute("data-log-id");
-          var nextLogs = [];
-          for (var j = 0; j < userLogs.length; j++) {
-            if (userLogs[j].logId !== delId) nextLogs.push(userLogs[j]);
-          }
-          userLogs = nextLogs;
-          saveLogs();
-          renderAllViews();
-          showToast("🗑️ 已刪除該筆紀錄。");
-        }
-      });
-
-      // 查詢按鈕與篩選事件（按「🔍 查詢」或直接輸入/切換都會執行）
-      function runSearch() {
-        renderDatabaseTable();
       }
-      document.getElementById("btnDoSearch").addEventListener("click", runSearch);
-      document.getElementById("qKeyword").addEventListener("input", runSearch);
-      document.getElementById("qKeyword").addEventListener("keydown", function(e) {
-        if (e.key === "Enter") {
-          e.preventDefault();
-          runSearch();
-        }
-      });
-      document.getElementById("qRegion").addEventListener("change", runSearch);
-      document.getElementById("qDiff").addEventListener("change", runSearch);
-      document.getElementById("qStatus").addEventListener("change", runSearch);
 
-      document.getElementById("btnClearSearch").addEventListener("click", function() {
-        document.getElementById("qKeyword").value = "";
-        document.getElementById("qRegion").value = "ALL";
-        document.getElementById("qDiff").value = "ALL";
-        document.getElementById("qStatus").value = "ALL";
-        runSearch();
+      const pct = ((done / 100) * 100).toFixed(1);
+      document.getElementById("kpiDone").textContent = done;
+      document.getElementById("kpiRemain").textContent = 100 - done;
+      document.getElementById("kpiRate").textContent = `${pct}%`;
+      document.getElementById("kpiBar").style.width = `${pct}%`;
+      document.getElementById("kpiHours").textContent = hours.toFixed(1);
+      document.getElementById("kpiPeople").textContent = people;
+
+      let regHtml = "";
+      for (const rName of regions) {
+        const st = regStats[rName];
+        const rPct = st.total > 0 ? Math.round((st.done / st.total) * 100) : 0;
+        regHtml += `
+          <div>
+            <div class="flex justify-between text-xs mb-1.5">
+              <strong class="text-zinc-800">${rName}</strong>
+              <span class="text-zinc-500">${st.done} / ${st.total} 座 (${rPct}%)</span>
+            </div>
+            <div class="w-full h-1.5 bg-zinc-200 rounded-full overflow-hidden">
+              <div class="h-full bg-[#1b4332] rounded-full transition-all duration-300" style="width:${rPct}%"></div>
+            </div>
+          </div>
+        `;
+      }
+      document.getElementById("statsRegionBody").innerHTML = regHtml;
+
+      let diffHtml = "";
+      for (const dName of diffs) {
+        const dst = diffStats[dName];
+        const dPct = dst.total > 0 ? Math.round((dst.done / dst.total) * 100) : 0;
+        diffHtml += `
+          <div>
+            <div class="flex justify-between text-xs mb-1.5">
+              <strong class="text-zinc-800">難度：${dName}</strong>
+              <span class="text-zinc-500">${dst.done} / ${dst.total} 座 (${dPct}%)</span>
+            </div>
+            <div class="w-full h-1.5 bg-zinc-200 rounded-full overflow-hidden">
+              <div class="h-full bg-[#2d6a4f] rounded-full transition-all duration-300" style="width:${dPct}%"></div>
+            </div>
+          </div>
+        `;
+      }
+      document.getElementById("statsDiffBody").innerHTML = diffHtml;
+
+      const tripBody = document.getElementById("tripListBody");
+      if (activeTrips.length === 0) {
+        tripBody.innerHTML = '<tr><td colspan="6" class="text-center py-10 px-4 text-zinc-400 text-xs">尚未建立任何完登紀錄，點擊右上角「＋ 新增完登紀錄」即可開始。</td></tr>';
+      } else {
+        let tHtml = "";
+        for (const item of activeTrips) {
+          const p = item.peak;
+          const rec = item.rec;
+          const timeStr = (rec.startTime && rec.endTime)
+            ? `${escapeHtml(rec.startTime)}–${escapeHtml(rec.endTime)} (<strong>${item.dur.toFixed(1)}h</strong>)`
+            : "—";
+          const pplStr = item.hc > 0 ? `${escapeHtml(rec.participants)} (${item.hc}人)` : "—";
+          const extraStr = [rec.transport, rec.memo].filter(Boolean).join(" · ") || "—";
+
+          tHtml += `
+            <tr data-peak-id="${p.id}" class="hover:bg-zinc-50 cursor-pointer">
+              <td class="py-3 px-4 whitespace-nowrap">
+                <span class="font-mono text-xs text-zinc-400 mr-1.5">${escapeHtml(p.code)}</span>
+                <strong class="text-zinc-900">${escapeHtml(p.name)}</strong>
+              </td>
+              <td class="py-3 px-4 text-center">${getStatusBadge(rec.status)}</td>
+              <td class="py-3 px-4 text-center text-xs">${escapeHtml(rec.date || "—")}</td>
+              <td class="py-3 px-4 text-center text-xs">${timeStr}</td>
+              <td class="py-3 px-4 text-xs">${pplStr}</td>
+              <td class="py-3 px-4 text-xs text-zinc-600">${escapeHtml(extraStr)}</td>
+            </tr>
+          `;
+        }
+        tripBody.innerHTML = tHtml;
+      }
+    }
+
+    function openModal(peakId, isAddMode) {
+      buildPeakDropdown();
+      const wrap = document.getElementById("mPeakSelectWrap");
+      if (isAddMode) wrap.classList.remove("hidden");
+      else wrap.classList.add("hidden");
+
+      fillModalData(peakId, isAddMode);
+      document.getElementById("recordModal").classList.remove("hidden");
+    }
+
+    function fillModalData(peakId, isAddMode) {
+      const p = PEAKS_DB.find(item => item.id === peakId);
+      if (!p) return;
+
+      const today = new Date().toISOString().slice(0, 10);
+      const existing = userRecords[peakId];
+      const rec = existing ? {
+        ...existing,
+        status: existing.status === "已完登" ? "已完登" : "未完成"
+      } : {
+        status: isAddMode ? "已完登" : "未完成",
+        date: isAddMode ? today : "",
+        startTime: "",
+        endTime: "",
+        participants: "",
+        transport: "",
+        memo: ""
+      };
+
+      document.getElementById("mPeakId").value = p.id;
+      document.getElementById("mPeakSelect").value = p.id;
+      document.getElementById("mCode").textContent = p.code;
+      document.getElementById("mName").textContent = p.name;
+      document.getElementById("mElev").textContent = `${p.elev.toLocaleString()}m`;
+      document.getElementById("mCounty").textContent = `${p.county} • ${p.region}`;
+      document.getElementById("mDiff").textContent = p.diff;
+      document.getElementById("mEstTime").textContent = p.estTime;
+      document.getElementById("mTrailhead").textContent = p.trailhead;
+      document.getElementById("mGear").textContent = p.gear;
+      document.getElementById("mNote").textContent = p.note;
+
+      document.getElementById("mStatus").value = rec.status;
+      document.getElementById("mDate").value = rec.date || "";
+      document.getElementById("mStart").value = rec.startTime || "";
+      document.getElementById("mEnd").value = rec.endTime || "";
+      document.getElementById("mParticipants").value = rec.participants || "";
+      document.getElementById("mTransport").value = rec.transport || "";
+      document.getElementById("mMemo").value = rec.memo || "";
+
+      refreshModalPreviews();
+    }
+
+    function closeModal() {
+      document.getElementById("recordModal").classList.add("hidden");
+    }
+
+    function refreshModalPreviews() {
+      const s = document.getElementById("mStart").value;
+      const e = document.getElementById("mEnd").value;
+      const dur = calcHours(s, e);
+      document.getElementById("mDuration").textContent = dur !== null ? `${dur.toFixed(2)} 小時` : "--";
+
+      const ppl = document.getElementById("mParticipants").value;
+      document.getElementById("mHeadcount").textContent = countPeople(ppl);
+    }
+
+    async function saveModalRecord() {
+      const id = parseInt(document.getElementById("mPeakId").value, 10);
+      const status = document.getElementById("mStatus").value;
+      const date = document.getElementById("mDate").value;
+      const startTime = document.getElementById("mStart").value;
+      const endTime = document.getElementById("mEnd").value;
+      const participants = document.getElementById("mParticipants").value.trim();
+      const transport = document.getElementById("mTransport").value.trim();
+      const memo = document.getElementById("mMemo").value.trim();
+
+      const peak = PEAKS_DB.find(item => item.id === id);
+      closeModal();
+
+      if (status === "未完成" && !date && !startTime && !endTime && !participants && !transport && !memo) {
+        await deleteRecord(id);
+        showToast(`已重設「${peak ? peak.name : ""}」紀錄`);
+      } else {
+        await saveRecord(id, { status, date, startTime, endTime, participants, transport, memo });
+        showToast(`✅ 已儲存「${peak ? peak.name : ""}」的紀錄`);
+      }
+    }
+
+    async function clearModalRecord() {
+      const id = parseInt(document.getElementById("mPeakId").value, 10);
+      closeModal();
+      await deleteRecord(id);
+      showToast("已重設該山岳紀錄");
+    }
+
+    function switchTab(tabName) {
+      const btnList = document.getElementById("tabBtnList");
+      const btnStats = document.getElementById("tabBtnStats");
+      const viewList = document.getElementById("viewList");
+      const viewStats = document.getElementById("viewStats");
+
+      if (tabName === "list") {
+        btnList.className = "px-4 py-1.5 rounded-lg text-xs sm:text-sm font-semibold bg-white text-[#1b4332] shadow-sm transition cursor-pointer";
+        btnStats.className = "px-4 py-1.5 rounded-lg text-xs sm:text-sm font-semibold text-zinc-600 hover:text-zinc-900 transition cursor-pointer";
+        viewList.classList.remove("hidden");
+        viewStats.classList.add("hidden");
+      } else {
+        btnStats.className = "px-4 py-1.5 rounded-lg text-xs sm:text-sm font-semibold bg-white text-[#1b4332] shadow-sm transition cursor-pointer";
+        btnList.className = "px-4 py-1.5 rounded-lg text-xs sm:text-sm font-semibold text-zinc-600 hover:text-zinc-900 transition cursor-pointer";
+        viewStats.classList.remove("hidden");
+        viewList.classList.add("hidden");
+        updateKPIsAndStats();
+      }
+    }
+
+    function initAppUI() {
+      buildTimeOptions();
+      buildPeakDropdown();
+      initDataLayer();
+
+      const triggerAdd = () => {
+        const firstUnfinished = PEAKS_DB.find(p => !userRecords[p.id] || userRecords[p.id].status !== "已完登") || PEAKS_DB[0];
+        openModal(firstUnfinished.id, true);
+      };
+
+      document.getElementById("btnOpenAdd").addEventListener("click", triggerAdd);
+      document.getElementById("btnOpenAdd2").addEventListener("click", triggerAdd);
+      document.getElementById("btnOpenCloudModal").addEventListener("click", openCloudModal);
+      document.getElementById("btnCloseCloudModal").addEventListener("click", closeCloudModal);
+      document.getElementById("btnCancelCloudModal").addEventListener("click", closeCloudModal);
+      document.getElementById("cloudModal").addEventListener("click", (e) => {
+        if (e.target.id === "cloudModal") closeCloudModal();
       });
 
-      // 100 座總表右側「＋ 紀錄此山」按鈕
-      document.getElementById("peaksDbTableBody").addEventListener("click", function(e) {
-        var target = e.target;
-        if (target.classList.contains("btn-quick-add")) {
-          var pid = parseInt(target.getAttribute("data-peak-id"), 10);
-          var sec = document.getElementById("recordFormSection");
-          sec.classList.remove("hidden");
-          resetFormToNew(pid);
-          sec.scrollIntoView({ behavior: "smooth" });
+      document.getElementById("btnSaveCloudConfig").addEventListener("click", async () => {
+        const roomVal = (document.getElementById("cloudRoomInput").value || "taiwan_100_small_peaks_shared").trim();
+        const rawCfgText = document.getElementById("cloudConfigInput").value;
+        const parsedCfg = parseFirebaseConfigText(rawCfgText);
+
+        if (!parsedCfg || !parsedCfg.apiKey || !parsedCfg.projectId) {
+          document.getElementById("cloudFeedbackText").textContent = "⚠️ 請貼上有效的 Firebase 設定（需包含 apiKey 與 projectId）。";
+          return;
         }
+
+        try {
+          window.localStorage.setItem(CLOUD_ROOM_STORAGE_KEY, roomVal);
+          window.localStorage.setItem(CLOUD_CONFIG_STORAGE_KEY, JSON.stringify(parsedCfg));
+        } catch (e) {
+          // Ignore storage error
+        }
+
+        closeCloudModal();
+        await initDataLayer();
+        showToast("☁️ 已套用多人即時雲端同步設定");
+      });
+
+      document.getElementById("btnResetCloudConfig").addEventListener("click", async () => {
+        try {
+          window.localStorage.removeItem(CLOUD_ROOM_STORAGE_KEY);
+          window.localStorage.removeItem(CLOUD_CONFIG_STORAGE_KEY);
+        } catch (e) {
+          // Ignore storage error
+        }
+        closeCloudModal();
+        await initDataLayer();
+        showToast("已清除雲端設定，切回本機儲存模式");
+      });
+
+      document.getElementById("filterSearch").addEventListener("input", renderAll);
+      document.getElementById("filterRegion").addEventListener("change", renderAll);
+      document.getElementById("filterDiff").addEventListener("change", renderAll);
+      document.getElementById("filterStatus").addEventListener("change", renderAll);
+
+      document.getElementById("btnResetFilter").addEventListener("click", () => {
+        document.getElementById("filterSearch").value = "";
+        document.getElementById("filterRegion").value = "ALL";
+        document.getElementById("filterDiff").value = "ALL";
+        document.getElementById("filterStatus").value = "RECORDED";
+        renderAll();
+      });
+
+      document.getElementById("btnShowAll100").addEventListener("click", () => {
+        document.getElementById("filterSearch").value = "";
+        document.getElementById("filterRegion").value = "ALL";
+        document.getElementById("filterDiff").value = "ALL";
+        document.getElementById("filterStatus").value = "ALL";
+        renderAll();
+      });
+
+      document.getElementById("tabBtnList").addEventListener("click", () => switchTab("list"));
+      document.getElementById("tabBtnStats").addEventListener("click", () => switchTab("stats"));
+
+      const handleRowClick = (e) => {
+        const row = e.target.closest("[data-peak-id]");
+        if (row) {
+          const id = parseInt(row.getAttribute("data-peak-id"), 10);
+          openModal(id, false);
+        }
+      };
+
+      document.getElementById("tableBody").addEventListener("click", handleRowClick);
+      document.getElementById("tripListBody").addEventListener("click", handleRowClick);
+
+      document.getElementById("mPeakSelect").addEventListener("change", function() {
+        fillModalData(parseInt(this.value, 10), true);
+      });
+
+      document.getElementById("mStart").addEventListener("change", refreshModalPreviews);
+      document.getElementById("mEnd").addEventListener("change", refreshModalPreviews);
+      document.getElementById("mParticipants").addEventListener("input", refreshModalPreviews);
+
+      document.getElementById("btnCloseModal").addEventListener("click", closeModal);
+      document.getElementById("btnCancelModal").addEventListener("click", closeModal);
+      document.getElementById("btnSaveRecord").addEventListener("click", saveModalRecord);
+      document.getElementById("btnClearRecord").addEventListener("click", clearModalRecord);
+
+      document.getElementById("recordModal").addEventListener("click", (e) => {
+        if (e.target.id === "recordModal") closeModal();
       });
 
       // 匯出 CSV
-      document.getElementById("btnCsv").addEventListener("click", function() {
-        var headers = ["編號", "小百岳名稱", "海拔(m)", "縣市", "區域", "難度", "完登狀態", "攀登日期", "起始時間", "結束時間", "總耗時(時)", "參加者名單", "參加人數", "車輛接駁", "備註心得"];
-        var lines = [headers.join(",")];
-        for (var i = 0; i < userLogs.length; i++) {
-          var lg = userLogs[i];
-          var pk = getPeakById(lg.peakId);
-          var dur = calcDuration(lg.startTime, lg.endTime);
-          var hc = countPeople(lg.participants);
-          var row = [
-            pk.code, pk.name, pk.elev, pk.county, pk.region, pk.diff,
-            lg.status, lg.date || "", lg.startTime || "", lg.endTime || "",
-            dur !== null ? dur.toFixed(2) : "", lg.participants || "", hc,
-            lg.transport || "", lg.memo || ""
+      document.getElementById("btnExportCsv").addEventListener("click", () => {
+        const headers = [
+          "編號", "小百岳名稱", "海拔(m)", "行政縣市", "區域", "難度等級",
+          "預估來回耗時", "常用起登點", "完登狀態", "攀登日期",
+          "起始時間", "結束時間", "實際總耗時(時)", "參加者名單", "參加人數", "車輛接駁", "團務備註"
+        ];
+        const lines = [headers.join(",")];
+        for (const p of PEAKS_DB) {
+          const rec = userRecords[p.id] || {};
+          const dur = calcHours(rec.startTime, rec.endTime);
+          const hc = countPeople(rec.participants);
+          const statusVal = rec.status === "已完登" ? "已完登" : "未完成";
+          const cols = [
+            p.code, p.name, p.elev, p.county, p.region, p.diff,
+            p.estTime, p.trailhead, statusVal, rec.date || "",
+            rec.startTime || "", rec.endTime || "", dur !== null ? dur.toFixed(2) : "",
+            rec.participants || "", hc > 0 ? hc : "", rec.transport || "", rec.memo || ""
           ];
-          var escRow = [];
-          for (var c = 0; c < row.length; c++) {
-            escRow.push('"' + String(row[c]).replace(/"/g, '""') + '"');
-          }
-          lines.push(escRow.join(","));
+          lines.push(cols.map(v => `"${String(v).replace(/"/g, '""')}"`).join(","));
         }
-        var blob = new Blob(["\uFEFF" + lines.join("\n")], { type: "text/csv;charset=utf-8;" });
-        var url = URL.createObjectURL(blob);
-        var a = document.createElement("a");
+        const blob = new Blob(["\uFEFF" + lines.join("\n")], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
         a.href = url;
-        a.download = "台灣小百岳完登出團紀錄_" + new Date().toISOString().slice(0, 10) + ".csv";
-        document.body.appendChild(a);
+        a.download = `台灣小百岳100座紀錄表_${new Date().toISOString().slice(0, 10)}.csv`;
         a.click();
-        document.body.removeChild(a);
         URL.revokeObjectURL(url);
+        showToast("已匯出 CSV 紀錄表");
       });
 
-      // 備份 JSON
-      document.getElementById("btnBackup").addEventListener("click", function() {
-        var blob = new Blob([JSON.stringify(userLogs, null, 2)], { type: "application/json" });
-        var url = URL.createObjectURL(blob);
-        var a = document.createElement("a");
+      // 匯出 JSON 備份
+      document.getElementById("btnExportJson").addEventListener("click", () => {
+        const blob = new Blob([JSON.stringify(userRecords, null, 2)], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
         a.href = url;
-        a.download = "台灣小百岳紀錄備份_" + new Date().toISOString().slice(0, 10) + ".json";
-        document.body.appendChild(a);
+        a.download = `台灣小百岳完登日誌備份_${new Date().toISOString().slice(0, 10)}.json`;
         a.click();
-        document.body.removeChild(a);
         URL.revokeObjectURL(url);
+        showToast("已下載 JSON 備份檔");
       });
 
-      // 還原 JSON
-      document.getElementById("fileRestore").addEventListener("change", function(e) {
-        var f = e.target.files[0];
-        if (!f) return;
-        var reader = new FileReader();
-        reader.onload = function(ev) {
+      // 還原 JSON 備份
+      document.getElementById("inputImportJson").addEventListener("change", (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = async (ev) => {
           try {
-            var data = JSON.parse(ev.target.result);
-            if (Array.isArray(data)) {
-              userLogs = data;
-              saveLogs();
-              renderAllViews();
-              showToast("✅ 紀錄還原成功！");
-            } else {
-              alert("備份檔案格式不符。");
+            const parsed = JSON.parse(ev.target.result);
+            if (parsed && typeof parsed === "object") {
+              const entries = Object.entries(parsed);
+              for (const [idStr, rec] of entries) {
+                const pid = parseInt(idStr, 10);
+                if (!isNaN(pid) && rec) {
+                  await saveRecord(pid, {
+                    status: rec.status === "已完登" ? "已完登" : "未完成",
+                    date: rec.date || "",
+                    startTime: rec.startTime || "",
+                    endTime: rec.endTime || "",
+                    participants: rec.participants || "",
+                    transport: rec.transport || "",
+                    memo: rec.memo || ""
+                  });
+                }
+              }
+              showToast(`✅ 已成功還原 ${entries.length} 筆紀錄！`);
             }
           } catch (err) {
-            alert("檔案讀取失敗，請確認選擇正確的 JSON 備份檔。");
+            showToast("❌ 檔案格式不正確，請選擇正確的 JSON 備份檔");
           }
         };
-        reader.readAsText(f);
+        reader.readAsText(file);
         e.target.value = "";
       });
-    });
+    }
+
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", initAppUI);
+    } else {
+      initAppUI();
+    }
   </script>
 </body>
 </html>
