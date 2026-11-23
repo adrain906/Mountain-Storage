@@ -383,9 +383,7 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
     import { getAuth, signInAnonymously, onAuthStateChanged, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
     import {
-      initializeFirestore,
-      persistentLocalCache,
-      persistentMultipleTabManager,
+      getFirestore,
       doc,
       setDoc,
       deleteDoc,
@@ -498,43 +496,37 @@
       {"id": 90, "code": "#090", "name": "月眉山", "elev": 614, "county": "花蓮縣", "region": "東部", "diff": "低", "estTime": "2～2.5 小時", "trailhead": "壽豐鄉米棧古道 / 193縣道登山口", "gear": "健行鞋、登山杖、防蚊液", "note": "海岸山脈北段最高峰，步道平緩寬大、林蔭涼爽"},
       {"id": 91, "code": "#091", "name": "八里灣山 (貓公富士山)", "elev": 924, "county": "花蓮縣", "region": "東部", "diff": "中至高", "estTime": "5～6.5 小時", "trailhead": "豐濱鄉八里灣部落登山口", "gear": "抓地登山鞋、防螞蝗裝備、手套、頭燈", "note": "阿美族聖山，路途遙遠且需多次渡溪與陡上，具極高野性挑戰"},
       {"id": 92, "code": "#092", "name": "萬人山", "elev": 886, "county": "花蓮縣", "region": "東部", "diff": "低", "estTime": "1.5～2 小時", "trailhead": "富里鄉六十石山金針花園區上方", "gear": "輕便健行鞋、防曬帽", "note": "每年8-9月金針花季絕美，輕鬆登頂俯瞰花東縱谷稻浪"},
-      {"id": 93, "code": "#093", "name": "都蘭山", "elev": 1190, "county": "台東縣", "region": "東部", "diff": "中", "estTime": "3.5～4.5 小時", "trailhead": "東河鄉都蘭林道4K登山口", "gear": "抓地登山鞋、手套、登山杖、防蚊", "note": "卑南與阿美族聖山，雲霧繚繞的原始闊葉林，遠眺太平洋與綠島"},
-      {"id": 94, "code": "#094", "name": "太麻里山", "elev": 1340, "county": "台東縣", "region": "東部", "diff": "低", "estTime": "0.5～1 小時", "trailhead": "太麻里金針山雙乳峰停車場旁", "gear": "輕便外套、防曬帽", "note": "開車可直達雙乳峰附近，步行15分鐘即達一等三角點，金針花季極美"},
-      {"id": 95, "code": "#095", "name": "加奈美山", "elev": 780, "county": "台東縣", "region": "東部", "diff": "低至中", "estTime": "2～2.5 小時", "trailhead": "大武鄉加津林產業道路登山口", "gear": "健行鞋、登山杖、防蚊液", "note": "林道穿行檳榔園與次生林，登頂可眺望南迴太平洋海岸"},
-      {"id": 96, "code": "#096", "name": "巴塱衛山", "elev": 325, "county": "台東縣", "region": "東部", "diff": "低", "estTime": "0.5～1 小時", "trailhead": "大武鄉南興村忘憂亭步道入口", "gear": "輕便運動鞋、防曬帽", "note": "步道平緩好走，登頂忘憂亭擁有無敵太平洋海景視野"},
-      {"id": 97, "code": "#097", "name": "紅頭山", "elev": 552, "county": "台東縣", "region": "離島", "diff": "中", "estTime": "3.5～4.5 小時", "trailhead": "蘭嶼鄉椰油村 / 紅頭村登山口", "gear": "抓地登山鞋、耐磨手套、長袖防刮", "note": "蘭嶼最高峰（達悟族聖山），熱帶雨林樹根盤錯濕滑，需專人或熟路者帶領"},
-      {"id": 98, "code": "#098", "name": "雲台山", "elev": 248, "county": "連江縣", "region": "離島", "diff": "低", "estTime": "0.2～0.5 小時", "trailhead": "南竿鄉雲台山軍情館觀景台旁", "gear": "輕便休閒鞋", "note": "馬祖南竿第一高峰，車道直達觀景台旁，俯瞰馬祖列島海景"},
-      {"id": 99, "code": "#099", "name": "太武山", "elev": 253, "county": "金門縣", "region": "離島", "diff": "低", "estTime": "1.5～2 小時", "trailhead": "金湖鎮玉章路牌樓登山口", "gear": "運動休閒鞋、防曬水壺", "note": "金門最高峰，全程寬大柏油坡道，必訪「毋忘在莒」勒石與海印寺"},
-      {"id": 100, "code": "#100", "name": "蛇頭山", "elev": 20, "county": "澎湖縣", "region": "離島", "diff": "低", "estTime": "0.2～0.5 小時", "trailhead": "馬公市風櫃尾蛇頭山遊憩區", "gear": "輕便休閒鞋、防曬帽", "note": "全台海拔最低小百岳，輕鬆漫步觀賞荷蘭城堡遺址與馬公港海景"}
+      {"id": 93, "code": "#093", "name": "都蘭山", "elev": 1190, "county": "台東縣", "region": "東部", "diff": "中", "estTime": "4～5 小時", "trailhead": "東河鄉都蘭林道4K登山口", "gear": "中筒登山鞋、登山杖、手套、充足飲水", "note": "台東聖山，原始森林樹根路陡上，普悠瑪祭台與太平洋海景壯麗"},
+      {"id": 94, "code": "#094", "name": "加奈美山", "elev": 780, "county": "台東縣", "region": "東部", "diff": "低至中", "estTime": "2～2.5 小時", "trailhead": "大武鄉加津林部落產業道路", "gear": "健行鞋、防蚊液、登山杖", "note": "沿途為果園產道與竹林路徑，山頂可遠眺太平洋海岸線"},
+      {"id": 95, "code": "#095", "name": "巴塱衛山", "elev": 325, "county": "台東縣", "region": "東部", "diff": "低", "estTime": "0.5～1 小時", "trailhead": "大武鄉南興村忘憂亭步道", "gear": "輕便健行鞋、防曬水壺", "note": "步道平緩好走，登頂忘憂亭擁有360度太平洋與南迴海岸全景"},
+      {"id": 96, "code": "#096", "name": "紅頭山", "elev": 552, "county": "台東縣", "region": "離島", "diff": "中", "estTime": "3～4 小時", "trailhead": "蘭嶼鄉紅頭部落登山口", "gear": "抓地登山鞋、耐磨手套、防蚊液", "note": "蘭嶼最高峰，熱帶雨林潮濕泥濘且需拉繩攀爬，展望太平洋極佳"},
+      {"id": 97, "code": "#097", "name": "蛇頭山", "elev": 20, "county": "澎湖縣", "region": "離島", "diff": "低", "estTime": "0.5 小時", "trailhead": "馬公市風櫃半島蛇頭山遊憩區", "gear": "休閒鞋、防風防曬裝備", "note": "全台海拔最低小百岳，輕鬆散步即可俯瞰馬公港與歷史古戰場"},
+      {"id": 98, "code": "#098", "name": "大武山 (太武山)", "elev": 253, "county": "金門縣", "region": "離島", "diff": "低", "estTime": "1～1.5 小時", "trailhead": "金湖鎮玉章路牌樓登山口", "gear": "運動休閒鞋、防曬水壺", "note": "金門最高峰，全程寬敞柏油坡道，順遊毋忘在莒勒石與海印寺"},
+      {"id": 99, "code": "#099", "name": "雲台山", "elev": 248, "county": "連江縣", "region": "離島", "diff": "低", "estTime": "0.5 小時", "trailhead": "南竿鄉雲台山軍情館旁", "gear": "輕便休閒鞋、防風外套", "note": "南竿最高峰，車行可直達觀景台旁，俯瞰馬祖列島與大陸海岸線"},
+      {"id": 100, "code": "#100", "name": "壁山", "elev": 298, "county": "連江縣", "region": "離島", "diff": "低", "estTime": "0.5～1 小時", "trailhead": "北竿鄉壁山觀景台 / 千階步道", "gear": "輕便運動鞋、防風外套", "note": "馬祖列島最高峰，觀景台可將北竿機場跑道與塘岐村盡收眼底"}
     ];
 
-    const LOCAL_STORAGE_KEY = "tw_100_small_peaks_trips_v3";
-    const LEGACY_STORAGE_KEY = "tw_100_small_peaks_records_v2";
+    const LOCAL_STORAGE_KEY = "taiwan_100_small_peaks_trips_v3";
+    const activeCollectionName = "taiwan_peaks_100_records";
 
-    // 獨立出團紀錄列表：每筆紀錄擁有唯一 recordId，同一座山可多筆並存、互不覆蓋
     let tripRecords = [];
     let db = null;
     let auth = null;
     let currentUser = null;
     let isCloudActive = false;
-    let hasReceivedFirstCloudSnapshot = false;
     let unsubscribeSnapshot = null;
-    let memoryFallbackTrips = [];
+    let hasReceivedFirstCloudSnapshot = false;
     let pendingDuplicateSave = false;
 
-    const appId = "tw-100-peaks-github";
-    const activeCollectionName = "taiwan_100_small_peaks_trips_v3";
-    const legacyCollectionName = "taiwan_100_small_peaks_shared";
-
     function generateRecordId() {
-      return `rec_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+      return `rec_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
     }
 
-    function normalizeRecordItem(raw, fallbackId) {
+    function normalizeRecordItem(raw, fallbackId = "") {
       if (!raw || typeof raw !== "object") return null;
-      const pid = Number(raw.peakId);
-      if (Number.isNaN(pid) || pid < 1 || pid > 100) return null;
-      const rid = String(raw.recordId || fallbackId || generateRecordId());
+      const pid = Number(raw.peakId ?? raw.id);
+      if (!Number.isFinite(pid) || pid < 1 || pid > 100) return null;
+      const rid = String(raw.recordId || fallbackId || generateRecordId()).trim();
       return {
         recordId: rid,
         peakId: pid,
@@ -545,77 +537,57 @@
         participants: String(raw.participants || ""),
         transport: String(raw.transport || ""),
         memo: String(raw.memo || ""),
-        createdAt: String(raw.createdAt || raw.updatedAt || new Date().toISOString()),
+        createdAt: String(raw.createdAt || new Date().toISOString()),
         updatedAt: String(raw.updatedAt || new Date().toISOString())
       };
     }
 
+    function sortTripRecords(list) {
+      return [...list].sort((a, b) => {
+        const da = a.date || "";
+        const dbStr = b.date || "";
+        if (da !== dbStr) return dbStr.localeCompare(da);
+        return String(b.updatedAt || "").localeCompare(String(a.updatedAt || ""));
+      });
+    }
+
     function migrateAnyRecordsPayload(parsed) {
-      const list = [];
+      if (!parsed) return [];
+      const result = [];
       if (Array.isArray(parsed)) {
         for (const item of parsed) {
           const norm = normalizeRecordItem(item);
-          if (norm && hasMeaningfulRecord(norm)) list.push(norm);
+          if (norm && hasMeaningfulRecord(norm)) result.push(norm);
         }
-      } else if (parsed && typeof parsed === "object") {
-        // 相容舊版 { [peakId]: { ... } } 格式
-        for (const [k, v] of Object.entries(parsed)) {
-          if (!v || typeof v !== "object") continue;
-          const candidate = {
-            ...v,
-            peakId: v.peakId !== undefined ? v.peakId : Number(k),
-            recordId: v.recordId || `legacy_peak_${k}`
-          };
-          const norm = normalizeRecordItem(candidate);
-          if (norm && hasMeaningfulRecord(norm)) list.push(norm);
+      } else if (typeof parsed === "object") {
+        for (const [key, val] of Object.entries(parsed)) {
+          if (val && typeof val === "object") {
+            const norm = normalizeRecordItem({ ...val, peakId: val.peakId ?? Number(key) }, `legacy_peak_${key}`);
+            if (norm && hasMeaningfulRecord(norm)) result.push(norm);
+          }
         }
       }
-      return list;
-    }
-
-    function sortTripRecords(list) {
-      return [...list].sort((a, b) => {
-        const dA = a.date || "";
-        const dB = b.date || "";
-        if (dA !== dB) return dB.localeCompare(dA);
-        const cA = a.createdAt || "";
-        const cB = b.createdAt || "";
-        if (cA !== cB) return cB.localeCompare(cA);
-        return a.peakId - b.peakId;
-      });
+      return sortTripRecords(result);
     }
 
     function loadLocalRecords() {
       try {
-        const raw = window.localStorage.getItem(LOCAL_STORAGE_KEY);
-        if (raw) {
-          const parsed = JSON.parse(raw);
-          tripRecords = sortTripRecords(migrateAnyRecordsPayload(parsed));
-          memoryFallbackTrips = [...tripRecords];
+        const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
+        if (!raw) {
+          tripRecords = [];
           return;
         }
-        // 首次升級自動遷移舊版資料
-        const legacyRaw = window.localStorage.getItem(LEGACY_STORAGE_KEY);
-        if (legacyRaw) {
-          const parsedLegacy = JSON.parse(legacyRaw);
-          tripRecords = sortTripRecords(migrateAnyRecordsPayload(parsedLegacy));
-          memoryFallbackTrips = [...tripRecords];
-          saveLocalRecords();
-          return;
-        }
+        tripRecords = migrateAnyRecordsPayload(JSON.parse(raw));
       } catch (e) {
-        console.warn("讀取本機紀錄失敗，改用記憶體快取:", e);
+        tripRecords = [];
       }
-      tripRecords = [...memoryFallbackTrips];
     }
 
     function saveLocalRecords() {
-      tripRecords = sortTripRecords(tripRecords);
-      memoryFallbackTrips = [...tripRecords];
       try {
-        window.localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(tripRecords));
+        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(tripRecords));
       } catch (e) {
-        console.warn("寫入本機紀錄失敗:", e);
+        console.warn("本機快取寫入略過:", e);
       }
     }
 
@@ -1124,25 +1096,25 @@
       saveLocalRecords();
       renderListView();
 
-      if (isCloudActive && db && currentUser) {
+      if (db) {
         try {
-          const docRef = doc(db, "artifacts", appId, "public", "data", activeCollectionName, rid);
+          const docRef = doc(db, activeCollectionName, rid);
           await setDoc(docRef, {
             ...finalRecord,
-            updatedBy: currentUser.uid
+            updatedBy: currentUser ? currentUser.uid : "guest"
           });
           setSyncBadge("cloud", "雲端即時同步中", `已同步至雲端 • 共 ${tripRecords.length} 筆即時紀錄`);
           showToast(isNew ? "☁️ 已新增獨立紀錄並即時同步至雲端" : "☁️ 已更新紀錄並即時同步至雲端");
           return;
         } catch (err) {
           console.error("雲端寫入失敗:", err);
-          setSyncBadge("local", `雲端寫入受阻 (${err.code || "error"})`, "請檢查 Firebase Console 的匿名登入與 Firestore 規則");
+          setSyncBadge("local", `雲端寫入受阻 (${err.code || "error"})`, "請檢查 Firebase Console 的 Firestore 規則是否已發布");
           showToast(`⚠️ 已存至本機，但雲端同步失敗：${err.code || err.message}`);
           return;
         }
       }
 
-      showToast("💾 已存至本機（正在背景連線雲端或受權限阻擋）");
+      showToast("💾 已存至本機（雲端尚未連線）");
     }
 
     async function deleteTripRecordById(recordId) {
@@ -1151,9 +1123,9 @@
       saveLocalRecords();
       renderListView();
 
-      if (isCloudActive && db && currentUser) {
+      if (db) {
         try {
-          const docRef = doc(db, "artifacts", appId, "public", "data", activeCollectionName, String(recordId));
+          const docRef = doc(db, activeCollectionName, String(recordId));
           await deleteDoc(docRef);
           showToast("🗑️ 已從雲端刪除此筆紀錄");
           return;
@@ -1167,7 +1139,7 @@
       showToast("🗑️ 已從本機刪除此筆紀錄");
     }
 
-    function applyCloudSnapshotDocs(snap, userUid) {
+    function applyCloudSnapshotDocs(snap) {
       const cloudList = [];
       snap.forEach(d => {
         const norm = normalizeRecordItem(d.data(), d.id);
@@ -1176,25 +1148,19 @@
         }
       });
 
-      // 合併尚未同步到雲端的本機新增紀錄，防止重新整理或離線後資料遺失
-      const cloudIdSet = new Set(cloudList.map(r => r.recordId));
-      const localOnlyRecords = tripRecords.filter(r => !cloudIdSet.has(r.recordId));
-
-      if (!hasReceivedFirstCloudSnapshot && localOnlyRecords.length > 0 && userUid) {
+      // 首次連上雲端且雲端為空、但本機已有紀錄時，自動將本機紀錄上傳至雲端
+      if (!hasReceivedFirstCloudSnapshot && cloudList.length === 0 && tripRecords.length > 0 && db) {
         hasReceivedFirstCloudSnapshot = true;
-        const merged = sortTripRecords([...cloudList, ...localOnlyRecords]);
-        tripRecords = merged;
-        saveLocalRecords();
-        renderListView();
-        setSyncBadge("cloud", "雲端即時同步中", `已連線雲端 • 共 ${tripRecords.length} 筆即時紀錄`);
+        const toUpload = [...tripRecords];
         Promise.all(
-          localOnlyRecords.map(rec =>
-            setDoc(doc(db, "artifacts", appId, "public", "data", activeCollectionName, rec.recordId), {
+          toUpload.map(rec =>
+            setDoc(doc(db, activeCollectionName, rec.recordId), {
               ...rec,
-              updatedBy: userUid
+              updatedBy: currentUser ? currentUser.uid : "guest"
             })
           )
-        ).catch(err => console.warn("補同步本機紀錄失敗:", err));
+        ).catch(err => console.warn("初次上傳本機紀錄失敗:", err));
+        setSyncBadge("cloud", "雲端即時同步中", `已連線雲端 • 共 ${tripRecords.length} 筆即時紀錄`);
         return;
       }
 
@@ -1202,36 +1168,25 @@
       tripRecords = sortTripRecords(cloudList);
       saveLocalRecords();
       renderListView();
-      setSyncBadge("cloud", "雲端即時同步中", `已連線雲端 • 共 ${tripRecords.length} 筆即時紀錄`);
+
+      if (snap.metadata && snap.metadata.hasPendingWrites) {
+        setSyncBadge("local", "正在同步變更...", `資料傳送中 • 共 ${tripRecords.length} 筆紀錄`);
+      } else {
+        setSyncBadge("cloud", "雲端即時同步中", `已連線雲端 • 共 ${tripRecords.length} 筆即時紀錄`);
+      }
     }
 
-    async function migrateLegacyCloudCollectionIfEmpty(userUid) {
-      try {
-        const legacyColRef = collection(db, "artifacts", appId, "public", "data", legacyCollectionName);
-        const legacySnap = await getDocsFromServer(legacyColRef);
-        if (legacySnap.empty) return;
-        const migrated = [];
-        legacySnap.forEach(d => {
-          const data = d.data();
-          const norm = normalizeRecordItem(
-            { ...data, peakId: data.peakId ?? Number(d.id), recordId: data.recordId || `legacy_peak_${d.id}` },
-            `legacy_peak_${d.id}`
-          );
-          if (norm && hasMeaningfulRecord(norm)) migrated.push(norm);
-        });
-        if (migrated.length > 0) {
-          await Promise.all(
-            migrated.map(rec =>
-              setDoc(doc(db, "artifacts", appId, "public", "data", activeCollectionName, rec.recordId), {
-                ...rec,
-                updatedBy: userUid
-              })
-            )
-          );
-        }
-      } catch (e) {
-        // 舊集合無資料或無權限時靜默略過
-      }
+    function startRealtimeListener() {
+      if (!db || unsubscribeSnapshot) return;
+      const colRef = collection(db, activeCollectionName);
+      unsubscribeSnapshot = onSnapshot(colRef, { includeMetadataChanges: true }, (snap) => {
+        isCloudActive = true;
+        applyCloudSnapshotDocs(snap);
+      }, (err) => {
+        console.error("雲端即時監聽失敗:", err);
+        isCloudActive = false;
+        setSyncBadge("local", `雲端讀取受阻 (${err.code || "error"})`, "請至 Firebase Firestore「規則」開放讀寫權限");
+      });
     }
 
     async function initCloudSync() {
@@ -1241,54 +1196,33 @@
       }
 
       try {
-        const cloudApp = initializeApp(CUSTOM_FIREBASE_CONFIG, `peaksApp_${activeCollectionName}`);
+        const cloudApp = initializeApp(CUSTOM_FIREBASE_CONFIG, "taiwanPeaksLiveApp");
         auth = getAuth(cloudApp);
-        // 啟用多頁籤持久快取，重新整理時毫秒級載入快取並立即向伺服器校驗最新資料
-        db = initializeFirestore(cloudApp, {
-          localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
-        });
+        db = getFirestore(cloudApp);
 
-        setSyncBadge("local", "正在連線雲端資料庫...", "正在與 Firebase 建立即時同步通道");
+        setSyncBadge("local", "正在連線雲端...", "正在同步最新山岳紀錄");
 
-        // 確保匿名登入狀態持久化，重新整理免重新註冊新 UID，大幅加快連線速度
+        // 1) 立即建立即時監聽，不等匿名登入往返，大幅提升首屏載入速度
+        startRealtimeListener();
+
+        // 2) 同步進行匿名登入（若 Firestore 規則設為 request.auth != null 時也能順利驗證）
         setPersistence(auth, browserLocalPersistence).catch(() => {});
-
-        onAuthStateChanged(auth, async (user) => {
-          if (!user) return;
-          currentUser = user;
-          isCloudActive = true;
-
-          if (unsubscribeSnapshot) return;
-          const colRef = collection(db, "artifacts", appId, "public", "data", activeCollectionName);
-
-          // 立即建立即時監聽（含快取與伺服器端即時推送，跨手機/電腦即時同步）
-          unsubscribeSnapshot = onSnapshot(colRef, { includeMetadataChanges: true }, (snap) => {
-            if (snap.empty && !snap.metadata.fromCache && !hasReceivedFirstCloudSnapshot) {
-              migrateLegacyCloudCollectionIfEmpty(user.uid);
-            }
-            applyCloudSnapshotDocs(snap, user.uid);
-          }, (err) => {
-            console.error("雲端即時監聽失敗:", err);
-            isCloudActive = false;
-            setSyncBadge("local", `雲端讀取受阻 (${err.code || "error"})`, "請至 Firebase Firestore「規則」開放已登入使用者讀寫");
-          });
-
-          // 頁面重新整理時主動向伺服器拉取一次最新快照，確保拿到最正確的雲端資料
-          try {
-            const serverSnap = await getDocsFromServer(colRef);
-            applyCloudSnapshotDocs(serverSnap, user.uid);
-          } catch (serverErr) {
-            console.warn("伺服器即時校驗稍後由監聽接手:", serverErr.code || serverErr.message);
+        onAuthStateChanged(auth, (user) => {
+          if (user) {
+            currentUser = user;
+            if (!unsubscribeSnapshot) startRealtimeListener();
           }
         });
 
         if (!auth.currentUser) {
-          await signInAnonymously(auth);
+          signInAnonymously(auth).catch((authErr) => {
+            console.warn("匿名登入提示:", authErr.code || authErr.message);
+          });
         }
       } catch (err) {
-        console.error("Firebase 驗證或初始化失敗:", err);
+        console.error("Firebase 初始化失敗:", err);
         isCloudActive = false;
-        setSyncBadge("local", `雲端連線失敗 (${err.code || "error"})`, "請確認 Firebase 匿名登入已開啟且已授權網域");
+        setSyncBadge("local", `雲端連線失敗 (${err.code || "error"})`, "請檢查網路連線或 Firebase 專案設定");
       }
     }
 
@@ -1528,11 +1462,11 @@
             saveLocalRecords();
             renderListView();
 
-            if (isCloudActive && db && currentUser) {
+            if (isCloudActive && db) {
               for (const item of importedList) {
-                await setDoc(doc(db, "artifacts", appId, "public", "data", activeCollectionName, item.recordId), {
+                await setDoc(doc(db, activeCollectionName, item.recordId), {
                   ...item,
-                  updatedBy: currentUser.uid
+                  updatedBy: currentUser ? currentUser.uid : "guest"
                 });
               }
               showToast(`☁️ 已還原 ${importedList.length} 筆紀錄並同步至雲端`);
