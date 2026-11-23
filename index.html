@@ -82,12 +82,12 @@
       </div>
 
       <div class="bg-white border border-zinc-200 rounded-2xl p-4 sm:p-5 shadow-sm">
-        <span class="text-xs font-semibold text-zinc-500 block mb-2">尚未完登座數</span>
+        <span class="text-xs font-semibold text-zinc-500 block mb-2">累積出團筆數 / 剩餘</span>
         <div>
-          <span id="kpiRemain" class="text-2xl sm:text-3xl font-bold text-zinc-900">100</span>
-          <span class="text-xs sm:text-sm text-zinc-500 ml-1">座</span>
+          <span id="kpiTrips" class="text-2xl sm:text-3xl font-bold text-zinc-900">0</span>
+          <span class="text-xs sm:text-sm text-zinc-500 ml-1">筆出團</span>
         </div>
-        <p class="text-[11px] text-zinc-400 mt-2.5">距離完百目標剩餘山岳</p>
+        <p class="text-[11px] text-zinc-400 mt-2.5">距離完百尚餘 <strong id="kpiRemain" class="text-zinc-600">100</strong> 座</p>
       </div>
 
       <div class="bg-white border border-zinc-200 rounded-2xl p-4 sm:p-5 shadow-sm">
@@ -166,7 +166,7 @@
 
       <!-- 篩選計數列 -->
       <div class="flex items-center justify-between text-xs text-zinc-500 px-1">
-        <span>顯示 <strong id="visibleCount" class="text-zinc-900">0</strong> 座小百岳（名錄共 100 座）</span>
+        <span id="visibleSummaryText">顯示 <strong id="visibleCount" class="text-zinc-900">0</strong> 筆出團紀錄（名錄共 100 座）</span>
         <div class="flex items-center gap-3">
           <button type="button" id="btnShowAll100" class="text-[#1b4332] font-semibold underline cursor-pointer">
             瀏覽全部 100 座
@@ -250,6 +250,7 @@
       <div class="px-5 py-4 border-b border-zinc-200 bg-zinc-50/70 flex items-start justify-between">
         <div>
           <div class="flex items-center gap-2">
+            <span id="mModeTag" class="text-[11px] font-bold bg-[#1b4332] text-white px-2 py-0.5 rounded-full">新增獨立紀錄</span>
             <span id="mCode" class="text-[11px] font-bold bg-[#e8f3ee] text-[#1b4332] px-2 py-0.5 rounded-full">#001</span>
             <h3 id="mName" class="text-lg font-bold text-zinc-900">大屯山</h3>
             <span id="mElev" class="text-xs text-zinc-500">1,092m</span>
@@ -263,9 +264,9 @@
       </div>
 
       <div class="p-5 overflow-y-auto space-y-4">
-        <!-- 新增模式專用：100座小百岳下拉選單 -->
-        <div id="mPeakSelectWrap" class="hidden">
-          <label for="mPeakSelect" class="block text-xs font-semibold text-zinc-700 mb-1.5">選擇小百岳名稱</label>
+        <!-- 選擇小百岳名稱（新增與編輯皆可切換） -->
+        <div id="mPeakSelectWrap">
+          <label for="mPeakSelect" class="block text-xs font-semibold text-zinc-700 mb-1.5">選擇小百岳名稱（可重複新增不同日期／團次）</label>
           <select id="mPeakSelect"
             class="w-full px-3 py-2 text-sm font-semibold bg-zinc-50 border border-zinc-300 rounded-xl focus:bg-white focus:outline-none focus:border-[#1b4332]"></select>
         </div>
@@ -278,6 +279,7 @@
           <div>路況特色：<span id="mNote" class="text-zinc-700">-</span></div>
         </div>
 
+        <input type="hidden" id="mRecordId" />
         <input type="hidden" id="mPeakId" />
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
@@ -339,7 +341,7 @@
       <div class="px-5 py-3.5 border-t border-zinc-200 bg-zinc-50 flex items-center justify-between">
         <button type="button" id="btnClearRecord"
           class="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-rose-600 hover:bg-rose-50 cursor-pointer">
-          重設此山紀錄
+          刪除此筆紀錄
         </button>
         <div class="flex gap-2">
           <button type="button" id="btnCancelModal"
@@ -357,7 +359,7 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-    import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
     import { getFirestore, doc, setDoc, deleteDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
     // 已寫入您的 Firebase 專案設定（taiwan-peaks-log），山友開啟即自動即時同步
@@ -474,39 +476,110 @@
       {"id": 100, "code": "#100", "name": "蛇頭山", "elev": 20, "county": "澎湖縣", "region": "離島", "diff": "低", "estTime": "0.2～0.5 小時", "trailhead": "馬公市風櫃尾蛇頭山遊憩區", "gear": "輕便休閒鞋、防曬帽", "note": "全台海拔最低小百岳，輕鬆漫步觀賞荷蘭城堡遺址與馬公港海景"}
     ];
 
-    const LOCAL_STORAGE_KEY = "tw_100_small_peaks_records_v2";
-    let userRecords = {};
+    const LOCAL_STORAGE_KEY = "tw_100_small_peaks_trips_v3";
+    const LEGACY_STORAGE_KEY = "tw_100_small_peaks_records_v2";
+
+    // 獨立出團紀錄列表：每筆紀錄擁有唯一 recordId，同一座山可多筆並存、互不覆蓋
+    let tripRecords = [];
     let db = null;
     let auth = null;
     let currentUser = null;
     let isCloudActive = false;
+    let hasReceivedFirstCloudSnapshot = false;
     let unsubscribeSnapshot = null;
-    let memoryFallbackRecords = {};
+    let memoryFallbackTrips = [];
 
     const appId = "tw-100-peaks-github";
-    const activeCollectionName = "taiwan_100_small_peaks_shared";
+    const activeCollectionName = "taiwan_100_small_peaks_trips_v3";
+
+    function generateRecordId() {
+      return `rec_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    }
+
+    function normalizeRecordItem(raw, fallbackId) {
+      if (!raw || typeof raw !== "object") return null;
+      const pid = Number(raw.peakId);
+      if (Number.isNaN(pid) || pid < 1 || pid > 100) return null;
+      const rid = String(raw.recordId || fallbackId || generateRecordId());
+      return {
+        recordId: rid,
+        peakId: pid,
+        status: raw.status === "已完登" ? "已完登" : "未完成",
+        date: String(raw.date || ""),
+        startTime: String(raw.startTime || ""),
+        endTime: String(raw.endTime || ""),
+        participants: String(raw.participants || ""),
+        transport: String(raw.transport || ""),
+        memo: String(raw.memo || ""),
+        createdAt: String(raw.createdAt || raw.updatedAt || new Date().toISOString()),
+        updatedAt: String(raw.updatedAt || new Date().toISOString())
+      };
+    }
+
+    function migrateAnyRecordsPayload(parsed) {
+      const list = [];
+      if (Array.isArray(parsed)) {
+        for (const item of parsed) {
+          const norm = normalizeRecordItem(item);
+          if (norm && hasMeaningfulRecord(norm)) list.push(norm);
+        }
+      } else if (parsed && typeof parsed === "object") {
+        // 相容舊版 { [peakId]: { ... } } 格式
+        for (const [k, v] of Object.entries(parsed)) {
+          if (!v || typeof v !== "object") continue;
+          const candidate = {
+            ...v,
+            peakId: v.peakId !== undefined ? v.peakId : Number(k),
+            recordId: v.recordId || `legacy_peak_${k}`
+          };
+          const norm = normalizeRecordItem(candidate);
+          if (norm && hasMeaningfulRecord(norm)) list.push(norm);
+        }
+      }
+      return list;
+    }
+
+    function sortTripRecords(list) {
+      return [...list].sort((a, b) => {
+        const dA = a.date || "";
+        const dB = b.date || "";
+        if (dA !== dB) return dB.localeCompare(dA);
+        const cA = a.createdAt || "";
+        const cB = b.createdAt || "";
+        if (cA !== cB) return cB.localeCompare(cA);
+        return a.peakId - b.peakId;
+      });
+    }
 
     function loadLocalRecords() {
       try {
         const raw = window.localStorage.getItem(LOCAL_STORAGE_KEY);
         if (raw) {
           const parsed = JSON.parse(raw);
-          if (parsed && typeof parsed === "object") {
-            userRecords = { ...parsed };
-            memoryFallbackRecords = { ...parsed };
-            return;
-          }
+          tripRecords = sortTripRecords(migrateAnyRecordsPayload(parsed));
+          memoryFallbackTrips = [...tripRecords];
+          return;
+        }
+        // 首次升級自動遷移舊版資料
+        const legacyRaw = window.localStorage.getItem(LEGACY_STORAGE_KEY);
+        if (legacyRaw) {
+          const parsedLegacy = JSON.parse(legacyRaw);
+          tripRecords = sortTripRecords(migrateAnyRecordsPayload(parsedLegacy));
+          memoryFallbackTrips = [...tripRecords];
+          saveLocalRecords();
+          return;
         }
       } catch (e) {
         console.warn("讀取本機紀錄失敗，改用記憶體快取:", e);
       }
-      userRecords = { ...memoryFallbackRecords };
+      tripRecords = [...memoryFallbackTrips];
     }
 
     function saveLocalRecords() {
-      memoryFallbackRecords = { ...userRecords };
+      tripRecords = sortTripRecords(tripRecords);
+      memoryFallbackTrips = [...tripRecords];
       try {
-        window.localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(userRecords));
+        window.localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(tripRecords));
       } catch (e) {
         console.warn("寫入本機紀錄失敗:", e);
       }
@@ -597,8 +670,9 @@
 
     function buildPeakDropdownOptions() {
       const selectEl = document.getElementById("mPeakSelect");
+      const doneSet = new Set(tripRecords.filter(r => r.status === "已完登").map(r => r.peakId));
       selectEl.innerHTML = PEAKS_DB.map(peak => {
-        const st = userRecords[peak.id]?.status === "已完登" ? " [已完登]" : "";
+        const st = doneSet.has(peak.id) ? " [已完登]" : "";
         return `<option value="${peak.id}">${peak.code} ${peak.name} (${peak.county} • ${peak.elev}m)${st}</option>`;
       }).join("");
     }
@@ -632,96 +706,170 @@
       document.getElementById("btnResetFilter").classList.toggle("hidden", !isNonDefault);
 
       const tbody = document.getElementById("tableBody");
+      const summaryEl = document.getElementById("visibleSummaryText");
       let html = "";
       let count = 0;
 
-      for (const peak of PEAKS_DB) {
-        const rec = userRecords[peak.id] || {
-          status: "未完成",
-          date: "",
-          startTime: "",
-          endTime: "",
-          participants: "",
-          transport: "",
-          memo: ""
-        };
-        const isRecorded = hasMeaningfulRecord(rec);
-
-        if (statusVal === "RECORDED" && !isRecorded) continue;
-        if (statusVal === "已完登" && rec.status !== "已完登") continue;
-        if (statusVal === "未完成" && rec.status === "已完登") continue;
-        if (regionVal !== "ALL" && peak.region !== regionVal) continue;
-        if (diffVal !== "ALL" && peak.diff !== diffVal) continue;
-
-        if (kw) {
-          const hay = `${peak.code} ${peak.name} ${peak.county} ${peak.trailhead} ${rec.participants || ""} ${rec.transport || ""} ${rec.memo || ""}`.toLowerCase();
-          if (!hay.includes(kw)) continue;
+      // 模式 A：瀏覽全部 100 座名錄（或僅看未完成山岳）
+      if (statusVal === "ALL" || statusVal === "未完成") {
+        const peakTripsMap = new Map();
+        for (const rec of tripRecords) {
+          if (!peakTripsMap.has(rec.peakId)) peakTripsMap.set(rec.peakId, []);
+          peakTripsMap.get(rec.peakId).push(rec);
         }
 
-        count++;
-        const dur = calcDurationHours(rec.startTime, rec.endTime);
-        const hc = countParticipants(rec.participants);
-        const rowBg = rec.status === "已完登" ? "bg-emerald-50/40 hover:bg-emerald-50/80" : "hover:bg-zinc-50";
+        for (const peak of PEAKS_DB) {
+          const recs = peakTripsMap.get(peak.id) || [];
+          const hasDone = recs.some(r => r.status === "已完登");
 
-        const dtHtml = (rec.date || (rec.startTime && rec.endTime))
-          ? `<div class="font-semibold text-zinc-900 text-xs">${escapeHtml(rec.date || "未設日期")}</div>
-             <div class="text-[11px] text-zinc-500">${(rec.startTime && rec.endTime && dur !== null) ? `${escapeHtml(rec.startTime)}–${escapeHtml(rec.endTime)} (${dur.toFixed(1)}h)` : ""}</div>`
-          : `<span class="text-zinc-300">—</span>`;
+          if (statusVal === "未完成" && hasDone) continue;
+          if (regionVal !== "ALL" && peak.region !== regionVal) continue;
+          if (diffVal !== "ALL" && peak.diff !== diffVal) continue;
 
-        const notesParts = [];
-        if (hc > 0) notesParts.push(`${rec.participants} (${hc}人)`);
-        if (rec.transport) notesParts.push(rec.transport);
-        if (rec.memo) notesParts.push(rec.memo);
-        const notesStr = notesParts.join(" · ");
-        const notesHtml = notesStr
-          ? `<div class="max-w-[220px] truncate text-xs text-zinc-700" title="${escapeHtml(notesStr)}">${escapeHtml(notesStr)}</div>`
-          : `<span class="text-zinc-300">—</span>`;
+          if (kw) {
+            const extraText = recs.map(r => `${r.participants} ${r.transport} ${r.memo}`).join(" ");
+            const hay = `${peak.code} ${peak.name} ${peak.county} ${peak.trailhead} ${extraText}`.toLowerCase();
+            if (!hay.includes(kw)) continue;
+          }
 
-        html += `
-          <tr data-peak-id="${peak.id}" class="${rowBg} transition cursor-pointer">
-            <td class="py-3 px-3.5 font-mono text-xs font-semibold text-zinc-500 whitespace-nowrap">${escapeHtml(peak.code)}</td>
-            <td class="py-3 px-3.5">
-              <div class="flex items-baseline gap-1.5">
-                <span class="font-bold text-zinc-900">${escapeHtml(peak.name)}</span>
-                <span class="text-xs font-mono text-zinc-400">${peak.elev.toLocaleString()}m</span>
-              </div>
-              <div class="text-xs text-zinc-400 truncate max-w-[260px] mt-0.5" title="${escapeHtml(peak.trailhead)}">${escapeHtml(peak.trailhead)}</div>
-            </td>
-            <td class="py-3 px-3.5 hidden sm:table-cell whitespace-nowrap">
-              <div class="text-xs font-medium text-zinc-800">${escapeHtml(peak.county)}</div>
-              <div class="text-[11px] text-zinc-400">${escapeHtml(peak.region)}</div>
-            </td>
-            <td class="py-3 px-3.5 text-center whitespace-nowrap">${getDiffBadgeHtml(peak.diff)}</td>
-            <td class="py-3 px-3.5 text-center text-xs text-zinc-600 hidden md:table-cell whitespace-nowrap">${escapeHtml(peak.estTime)}</td>
-            <td class="py-3 px-3.5 text-center whitespace-nowrap">${getStatusBadgeHtml(rec.status)}</td>
-            <td class="py-3 px-3.5 hidden lg:table-cell whitespace-nowrap">${dtHtml}</td>
-            <td class="py-3 px-3.5 hidden xl:table-cell">${notesHtml}</td>
-            <td class="py-3 px-3.5 text-right whitespace-nowrap">
-              <button type="button" data-peak-id="${peak.id}"
-                class="px-2.5 py-1 rounded-lg bg-white hover:bg-zinc-100 text-zinc-700 border border-zinc-200 text-xs font-semibold cursor-pointer">
-                編輯
-              </button>
-            </td>
-          </tr>
-        `;
+          count++;
+          const latestRec = recs[0] || null;
+          const displayStatus = hasDone ? "已完登" : "未完成";
+          const rowBg = hasDone ? "bg-emerald-50/40 hover:bg-emerald-50/80" : "hover:bg-zinc-50";
+
+          const dtHtml = latestRec && (latestRec.date || (latestRec.startTime && latestRec.endTime))
+            ? `<div class="font-semibold text-zinc-900 text-xs">${escapeHtml(latestRec.date || "未設日期")}${recs.length > 1 ? ` <span class="text-emerald-700">(共${recs.length}筆)</span>` : ""}</div>`
+            : `<span class="text-zinc-300">—</span>`;
+
+          const notesStr = latestRec
+            ? [
+                countParticipants(latestRec.participants) > 0 ? `${latestRec.participants} (${countParticipants(latestRec.participants)}人)` : "",
+                latestRec.transport,
+                latestRec.memo
+              ].filter(Boolean).join(" · ")
+            : "";
+          const notesHtml = notesStr
+            ? `<div class="max-w-[220px] truncate text-xs text-zinc-700" title="${escapeHtml(notesStr)}">${escapeHtml(notesStr)}</div>`
+            : `<span class="text-zinc-300">—</span>`;
+
+          html += `
+            <tr data-add-peak-id="${peak.id}" class="${rowBg} transition cursor-pointer">
+              <td class="py-3 px-3.5 font-mono text-xs font-semibold text-zinc-500 whitespace-nowrap">${escapeHtml(peak.code)}</td>
+              <td class="py-3 px-3.5">
+                <div class="flex items-baseline gap-1.5">
+                  <span class="font-bold text-zinc-900">${escapeHtml(peak.name)}</span>
+                  <span class="text-xs font-mono text-zinc-400">${peak.elev.toLocaleString()}m</span>
+                </div>
+                <div class="text-xs text-zinc-400 truncate max-w-[260px] mt-0.5" title="${escapeHtml(peak.trailhead)}">${escapeHtml(peak.trailhead)}</div>
+              </td>
+              <td class="py-3 px-3.5 hidden sm:table-cell whitespace-nowrap">
+                <div class="text-xs font-medium text-zinc-800">${escapeHtml(peak.county)}</div>
+                <div class="text-[11px] text-zinc-400">${escapeHtml(peak.region)}</div>
+              </td>
+              <td class="py-3 px-3.5 text-center whitespace-nowrap">${getDiffBadgeHtml(peak.diff)}</td>
+              <td class="py-3 px-3.5 text-center text-xs text-zinc-600 hidden md:table-cell whitespace-nowrap">${escapeHtml(peak.estTime)}</td>
+              <td class="py-3 px-3.5 text-center whitespace-nowrap">${getStatusBadgeHtml(displayStatus)}</td>
+              <td class="py-3 px-3.5 hidden lg:table-cell whitespace-nowrap">${dtHtml}</td>
+              <td class="py-3 px-3.5 hidden xl:table-cell">${notesHtml}</td>
+              <td class="py-3 px-3.5 text-right whitespace-nowrap">
+                <button type="button" data-add-peak-id="${peak.id}"
+                  class="px-2.5 py-1 rounded-lg bg-white hover:bg-zinc-100 text-[#1b4332] border border-zinc-200 text-xs font-semibold cursor-pointer">
+                  ＋ 新增紀錄
+                </button>
+              </td>
+            </tr>
+          `;
+        }
+
+        if (summaryEl) {
+          summaryEl.innerHTML = `顯示 <strong id="visibleCount" class="text-zinc-900">${count}</strong> 座小百岳（名錄共 100 座）`;
+        }
+      } else {
+        // 模式 B（預設）：逐筆顯示每一筆獨立新增的出團／完登紀錄，互不覆蓋
+        for (const rec of tripRecords) {
+          if (!hasMeaningfulRecord(rec)) continue;
+          if (statusVal === "已完登" && rec.status !== "已完登") continue;
+
+          const peak = PEAKS_DB.find(p => p.id === rec.peakId);
+          if (!peak) continue;
+
+          if (regionVal !== "ALL" && peak.region !== regionVal) continue;
+          if (diffVal !== "ALL" && peak.diff !== diffVal) continue;
+
+          if (kw) {
+            const hay = `${peak.code} ${peak.name} ${peak.county} ${peak.trailhead} ${rec.date || ""} ${rec.participants || ""} ${rec.transport || ""} ${rec.memo || ""}`.toLowerCase();
+            if (!hay.includes(kw)) continue;
+          }
+
+          count++;
+          const dur = calcDurationHours(rec.startTime, rec.endTime);
+          const hc = countParticipants(rec.participants);
+          const rowBg = rec.status === "已完登" ? "bg-emerald-50/40 hover:bg-emerald-50/80" : "hover:bg-zinc-50";
+
+          const dtHtml = (rec.date || (rec.startTime && rec.endTime))
+            ? `<div class="font-semibold text-zinc-900 text-xs">${escapeHtml(rec.date || "未設日期")}</div>
+               <div class="text-[11px] text-zinc-500">${(rec.startTime && rec.endTime && dur !== null) ? `${escapeHtml(rec.startTime)}–${escapeHtml(rec.endTime)} (${dur.toFixed(1)}h)` : ""}</div>`
+            : `<span class="text-zinc-300">—</span>`;
+
+          const notesParts = [];
+          if (hc > 0) notesParts.push(`${rec.participants} (${hc}人)`);
+          if (rec.transport) notesParts.push(rec.transport);
+          if (rec.memo) notesParts.push(rec.memo);
+          const notesStr = notesParts.join(" · ");
+          const notesHtml = notesStr
+            ? `<div class="max-w-[220px] truncate text-xs text-zinc-700" title="${escapeHtml(notesStr)}">${escapeHtml(notesStr)}</div>`
+            : `<span class="text-zinc-300">—</span>`;
+
+          html += `
+            <tr data-record-id="${escapeHtml(rec.recordId)}" class="${rowBg} transition cursor-pointer">
+              <td class="py-3 px-3.5 font-mono text-xs font-semibold text-zinc-500 whitespace-nowrap">${escapeHtml(peak.code)}</td>
+              <td class="py-3 px-3.5">
+                <div class="flex items-baseline gap-1.5">
+                  <span class="font-bold text-zinc-900">${escapeHtml(peak.name)}</span>
+                  <span class="text-xs font-mono text-zinc-400">${peak.elev.toLocaleString()}m</span>
+                </div>
+                <div class="text-xs text-zinc-400 truncate max-w-[260px] mt-0.5" title="${escapeHtml(peak.trailhead)}">${escapeHtml(peak.trailhead)}</div>
+              </td>
+              <td class="py-3 px-3.5 hidden sm:table-cell whitespace-nowrap">
+                <div class="text-xs font-medium text-zinc-800">${escapeHtml(peak.county)}</div>
+                <div class="text-[11px] text-zinc-400">${escapeHtml(peak.region)}</div>
+              </td>
+              <td class="py-3 px-3.5 text-center whitespace-nowrap">${getDiffBadgeHtml(peak.diff)}</td>
+              <td class="py-3 px-3.5 text-center text-xs text-zinc-600 hidden md:table-cell whitespace-nowrap">${escapeHtml(peak.estTime)}</td>
+              <td class="py-3 px-3.5 text-center whitespace-nowrap">${getStatusBadgeHtml(rec.status)}</td>
+              <td class="py-3 px-3.5 hidden lg:table-cell whitespace-nowrap">${dtHtml}</td>
+              <td class="py-3 px-3.5 hidden xl:table-cell">${notesHtml}</td>
+              <td class="py-3 px-3.5 text-right whitespace-nowrap">
+                <button type="button" data-record-id="${escapeHtml(rec.recordId)}"
+                  class="px-2.5 py-1 rounded-lg bg-white hover:bg-zinc-100 text-zinc-700 border border-zinc-200 text-xs font-semibold cursor-pointer">
+                  編輯
+                </button>
+              </td>
+            </tr>
+          `;
+        }
+
+        if (summaryEl) {
+          summaryEl.innerHTML = `顯示 <strong id="visibleCount" class="text-zinc-900">${count}</strong> 筆出團紀錄（名錄共 100 座）`;
+        }
       }
 
       if (count === 0) {
         const emptyMsg = statusVal === "RECORDED" && !kw && regionVal === "ALL" && diffVal === "ALL"
           ? `目前尚未新增任何完登紀錄。請點擊右上角「＋ 新增完登紀錄」建立第一筆，或點擊「瀏覽全部 100 座」查看完整名錄。`
-          : `找不到符合條件的小百岳，請嘗試調整搜尋關鍵字或篩選條件。`;
+          : `找不到符合條件的小百岳或紀錄，請嘗試調整搜尋關鍵字或篩選條件。`;
         html = `<tr><td colspan="9" class="py-12 px-4 text-center text-xs sm:text-sm text-zinc-400">${escapeHtml(emptyMsg)}</td></tr>`;
       }
 
       tbody.innerHTML = html;
-      document.getElementById("visibleCount").textContent = count;
       updateDashboardAndStats();
     }
 
     function updateDashboardAndStats() {
-      let doneCount = 0;
+      const donePeakIds = new Set();
       let totalHours = 0;
       let totalPeople = 0;
+      let validTripCount = 0;
 
       const regions = ["北部", "桃竹苗", "中部", "南部", "東部", "離島"];
       const regMap = {};
@@ -733,31 +881,38 @@
 
       const tripRows = [];
 
+      for (const rec of tripRecords) {
+        if (!hasMeaningfulRecord(rec)) continue;
+        const peak = PEAKS_DB.find(p => p.id === rec.peakId);
+        if (!peak) continue;
+
+        validTripCount++;
+        if (rec.status === "已完登") {
+          donePeakIds.add(peak.id);
+        }
+
+        const dur = calcDurationHours(rec.startTime, rec.endTime);
+        if (dur !== null) totalHours += dur;
+
+        const hc = countParticipants(rec.participants);
+        totalPeople += hc;
+
+        tripRows.push({ peak, rec, dur, hc });
+      }
+
       for (const peak of PEAKS_DB) {
         regMap[peak.region].total++;
         diffMap[peak.diff].total++;
-
-        const rec = userRecords[peak.id];
-        if (rec) {
-          if (rec.status === "已完登") {
-            doneCount++;
-            regMap[peak.region].done++;
-            diffMap[peak.diff].done++;
-          }
-          const dur = calcDurationHours(rec.startTime, rec.endTime);
-          if (dur !== null) totalHours += dur;
-
-          const hc = countParticipants(rec.participants);
-          totalPeople += hc;
-
-          if (hasMeaningfulRecord(rec)) {
-            tripRows.push({ peak, rec, dur, hc });
-          }
+        if (donePeakIds.has(peak.id)) {
+          regMap[peak.region].done++;
+          diffMap[peak.diff].done++;
         }
       }
 
+      const doneCount = donePeakIds.size;
       const ratePct = ((doneCount / 100) * 100).toFixed(1);
       document.getElementById("kpiDone").textContent = doneCount;
+      document.getElementById("kpiTrips").textContent = validTripCount;
       document.getElementById("kpiRemain").textContent = 100 - doneCount;
       document.getElementById("kpiRate").textContent = `${ratePct}%`;
       document.getElementById("kpiBar").style.width = `${ratePct}%`;
@@ -809,7 +964,7 @@
             : `<span class="text-zinc-300">—</span>`;
           const extraText = [rec.transport, rec.memo].filter(Boolean).join(" · ") || `<span class="text-zinc-300">—</span>`;
           return `
-            <tr data-peak-id="${peak.id}" class="hover:bg-zinc-50 cursor-pointer">
+            <tr data-record-id="${escapeHtml(rec.recordId)}" class="hover:bg-zinc-50 cursor-pointer">
               <td class="py-3 px-4 whitespace-nowrap">
                 <span class="font-mono text-xs text-zinc-400 mr-1.5">${escapeHtml(peak.code)}</span>
                 <strong class="text-zinc-900">${escapeHtml(peak.name)}</strong>
@@ -825,21 +980,8 @@
       }
     }
 
-    function openRecordModal(peakId, isAddMode) {
-      buildPeakDropdownOptions();
+    function applyPeakHeaderInfo(peakId) {
       const peak = PEAKS_DB.find(p => p.id === Number(peakId)) || PEAKS_DB[0];
-      const todayStr = new Date().toISOString().slice(0, 10);
-      const existing = userRecords[peak.id] || {
-        status: isAddMode ? "已完登" : "未完成",
-        date: isAddMode ? todayStr : "",
-        startTime: "",
-        endTime: "",
-        participants: "",
-        transport: "",
-        memo: ""
-      };
-
-      document.getElementById("mPeakSelectWrap").classList.toggle("hidden", !isAddMode);
       document.getElementById("mPeakId").value = peak.id;
       document.getElementById("mPeakSelect").value = peak.id;
       document.getElementById("mCode").textContent = peak.code;
@@ -851,14 +993,38 @@
       document.getElementById("mTrailhead").textContent = peak.trailhead;
       document.getElementById("mGear").textContent = peak.gear;
       document.getElementById("mNote").textContent = peak.note;
+    }
 
-      document.getElementById("mStatus").value = existing.status === "已完登" ? "已完登" : "未完成";
-      document.getElementById("mDate").value = existing.date || "";
-      document.getElementById("mStart").value = existing.startTime || "";
-      document.getElementById("mEnd").value = existing.endTime || "";
-      document.getElementById("mParticipants").value = existing.participants || "";
-      document.getElementById("mTransport").value = existing.transport || "";
-      document.getElementById("mMemo").value = existing.memo || "";
+    // 開啟視窗：若傳入 recordId 則編輯該筆獨立紀錄；若未傳入則建立全新獨立紀錄（絕不覆蓋舊資料）
+    function openRecordModal({ peakId = 1, recordId = "" } = {}) {
+      buildPeakDropdownOptions();
+      const isEditExisting = Boolean(recordId);
+      const existing = isEditExisting ? tripRecords.find(r => r.recordId === recordId) : null;
+      const targetPeakId = existing ? existing.peakId : (Number(peakId) || 1);
+      const todayStr = new Date().toISOString().slice(0, 10);
+
+      applyPeakHeaderInfo(targetPeakId);
+
+      const modeTag = document.getElementById("mModeTag");
+      const clearBtn = document.getElementById("btnClearRecord");
+      if (existing) {
+        modeTag.textContent = "編輯此筆紀錄";
+        modeTag.className = "text-[11px] font-bold bg-amber-600 text-white px-2 py-0.5 rounded-full";
+        clearBtn.classList.remove("hidden");
+      } else {
+        modeTag.textContent = "新增獨立紀錄";
+        modeTag.className = "text-[11px] font-bold bg-[#1b4332] text-white px-2 py-0.5 rounded-full";
+        clearBtn.classList.add("hidden");
+      }
+
+      document.getElementById("mRecordId").value = existing ? existing.recordId : "";
+      document.getElementById("mStatus").value = existing ? (existing.status === "已完登" ? "已完登" : "未完成") : "已完登";
+      document.getElementById("mDate").value = existing ? (existing.date || "") : todayStr;
+      document.getElementById("mStart").value = existing ? (existing.startTime || "") : "";
+      document.getElementById("mEnd").value = existing ? (existing.endTime || "") : "";
+      document.getElementById("mParticipants").value = existing ? (existing.participants || "") : "";
+      document.getElementById("mTransport").value = existing ? (existing.transport || "") : "";
+      document.getElementById("mMemo").value = existing ? (existing.memo || "") : "";
 
       refreshModalCalculatedFields();
       const modal = document.getElementById("recordModal");
@@ -882,22 +1048,33 @@
       document.getElementById("mHeadcount").textContent = countParticipants(ppl);
     }
 
-    async function persistPeakRecord(peakId, recordObj) {
-      const idNum = Number(peakId);
-      const shouldDelete = !hasMeaningfulRecord(recordObj);
+    async function persistTripRecord(recordPayload) {
+      const isNew = !recordPayload.recordId;
+      const rid = isNew ? generateRecordId() : String(recordPayload.recordId);
+      const pid = Number(recordPayload.peakId);
+      const nowIso = new Date().toISOString();
 
-      if (shouldDelete) {
-        delete userRecords[idNum];
+      const existingIdx = tripRecords.findIndex(r => r.recordId === rid);
+      const createdAt = existingIdx >= 0 ? (tripRecords[existingIdx].createdAt || nowIso) : nowIso;
+
+      const finalRecord = {
+        recordId: rid,
+        peakId: pid,
+        status: recordPayload.status === "已完登" ? "已完登" : "未完成",
+        date: recordPayload.date || "",
+        startTime: recordPayload.startTime || "",
+        endTime: recordPayload.endTime || "",
+        participants: recordPayload.participants || "",
+        transport: recordPayload.transport || "",
+        memo: recordPayload.memo || "",
+        createdAt,
+        updatedAt: nowIso
+      };
+
+      if (existingIdx >= 0) {
+        tripRecords[existingIdx] = finalRecord;
       } else {
-        userRecords[idNum] = {
-          status: recordObj.status === "已完登" ? "已完登" : "未完成",
-          date: recordObj.date || "",
-          startTime: recordObj.startTime || "",
-          endTime: recordObj.endTime || "",
-          participants: recordObj.participants || "",
-          transport: recordObj.transport || "",
-          memo: recordObj.memo || ""
-        };
+        tripRecords.unshift(finalRecord);
       }
 
       saveLocalRecords();
@@ -905,27 +1082,44 @@
 
       if (isCloudActive && db && currentUser) {
         try {
-          const docRef = doc(db, "artifacts", appId, "public", "data", activeCollectionName, String(idNum));
-          if (shouldDelete) {
-            await deleteDoc(docRef);
-          } else {
-            await setDoc(docRef, {
-              peakId: idNum,
-              ...userRecords[idNum],
-              updatedAt: new Date().toISOString(),
-              updatedBy: currentUser.uid
-            });
-          }
-          showToast("☁️ 已儲存至雲端並即時同步");
+          const docRef = doc(db, "artifacts", appId, "public", "data", activeCollectionName, rid);
+          await setDoc(docRef, {
+            ...finalRecord,
+            updatedBy: currentUser.uid
+          });
+          showToast(isNew ? "☁️ 已新增獨立紀錄並即時同步至雲端" : "☁️ 已更新紀錄並即時同步至雲端");
           return;
         } catch (err) {
           console.error("雲端寫入失敗:", err);
-          showToast("⚠️ 已存至本機（雲端寫入暫時失敗，請檢查 Firebase 授權網域與規則）");
+          setSyncBadge("local", `雲端寫入受阻 (${err.code || "error"})`, "請檢查 Firebase Console 的匿名登入與 Firestore 規則");
+          showToast(`⚠️ 已存至本機，但雲端同步失敗：${err.code || err.message}`);
           return;
         }
       }
 
-      showToast("💾 已儲存至本機（目前為離線或尚未連上雲端）");
+      showToast("💾 已存至本機（尚未連上雲端，請確認 Firebase 設定）");
+    }
+
+    async function deleteTripRecordById(recordId) {
+      if (!recordId) return;
+      tripRecords = tripRecords.filter(r => r.recordId !== recordId);
+      saveLocalRecords();
+      renderListView();
+
+      if (isCloudActive && db && currentUser) {
+        try {
+          const docRef = doc(db, "artifacts", appId, "public", "data", activeCollectionName, String(recordId));
+          await deleteDoc(docRef);
+          showToast("🗑️ 已從雲端刪除此筆紀錄");
+          return;
+        } catch (err) {
+          console.error("雲端刪除失敗:", err);
+          showToast(`⚠️ 本機已刪除，但雲端刪除失敗：${err.code || err.message}`);
+          return;
+        }
+      }
+
+      showToast("🗑️ 已從本機刪除此筆紀錄");
     }
 
     async function initCloudSync() {
@@ -934,49 +1128,61 @@
         unsubscribeSnapshot = null;
       }
 
-      const firebaseConfig = CUSTOM_FIREBASE_CONFIG;
-
       try {
-        const cloudApp = initializeApp(firebaseConfig, `peaksApp_${activeCollectionName}`);
+        const cloudApp = initializeApp(CUSTOM_FIREBASE_CONFIG, `peaksApp_${activeCollectionName}`);
         auth = getAuth(cloudApp);
         db = getFirestore(cloudApp);
 
-        // 直接使用匿名登入連線至您的 taiwan-peaks-log 專案（避免預覽環境內建 Token 與您的專案 ID 衝突）
-        const cred = await signInAnonymously(auth);
-        currentUser = cred.user || auth.currentUser;
-        isCloudActive = true;
-        setSyncBadge("cloud", "雲端即時同步中", "所有夥伴開啟連結即可即時查詢與共同編輯");
+        setSyncBadge("local", "正在連線雲端資料庫...", "正在與 Firebase 建立即時同步通道");
 
-        const colRef = collection(db, "artifacts", appId, "public", "data", activeCollectionName);
-        unsubscribeSnapshot = onSnapshot(colRef, (snap) => {
-          const nextRecords = {};
-          snap.forEach(d => {
-            const data = d.data() || {};
-            const pid = Number(data.peakId || d.id);
-            if (!Number.isNaN(pid)) {
-              nextRecords[pid] = {
-                status: data.status === "已完登" ? "已完登" : "未完成",
-                date: data.date || "",
-                startTime: data.startTime || "",
-                endTime: data.endTime || "",
-                participants: data.participants || "",
-                transport: data.transport || "",
-                memo: data.memo || ""
-              };
+        onAuthStateChanged(auth, (user) => {
+          if (!user) return;
+          currentUser = user;
+          isCloudActive = true;
+
+          if (unsubscribeSnapshot) return;
+          const colRef = collection(db, "artifacts", appId, "public", "data", activeCollectionName);
+          unsubscribeSnapshot = onSnapshot(colRef, { includeMetadataChanges: false }, (snap) => {
+            const cloudList = [];
+            snap.forEach(d => {
+              const norm = normalizeRecordItem(d.data(), d.id);
+              if (norm && hasMeaningfulRecord(norm)) {
+                cloudList.push(norm);
+              }
+            });
+
+            // 若雲端初次連線為空但本機已有先前新增的紀錄，自動把本機紀錄補上傳至雲端，避免重新整理資料消失
+            if (!hasReceivedFirstCloudSnapshot && cloudList.length === 0 && tripRecords.length > 0) {
+              hasReceivedFirstCloudSnapshot = true;
+              setSyncBadge("cloud", "雲端即時同步中", "所有夥伴開啟連結即可即時查詢與共同編輯");
+              Promise.all(
+                tripRecords.map(rec =>
+                  setDoc(doc(db, "artifacts", appId, "public", "data", activeCollectionName, rec.recordId), {
+                    ...rec,
+                    updatedBy: user.uid
+                  })
+                )
+              ).catch(err => console.warn("補同步本機紀錄失敗:", err));
+              return;
             }
+
+            hasReceivedFirstCloudSnapshot = true;
+            tripRecords = sortTripRecords(cloudList);
+            saveLocalRecords();
+            renderListView();
+            setSyncBadge("cloud", "雲端即時同步中", `已連線雲端 • 共 ${tripRecords.length} 筆即時紀錄`);
+          }, (err) => {
+            console.error("雲端即時監聽失敗:", err);
+            isCloudActive = false;
+            setSyncBadge("local", `雲端讀取受阻 (${err.code || "error"})`, "請至 Firebase Firestore「規則」開放已登入使用者讀寫");
           });
-          userRecords = nextRecords;
-          saveLocalRecords();
-          renderListView();
-        }, (err) => {
-          console.error("雲端監聽發生錯誤:", err);
-          isCloudActive = false;
-          setSyncBadge("local", "雲端連線中斷（改用本機）", "請確認 Firebase Firestore 規則與匿名登入已開啟");
         });
+
+        await signInAnonymously(auth);
       } catch (err) {
-        console.error("初始化 Firebase 失敗:", err);
+        console.error("Firebase 驗證或初始化失敗:", err);
         isCloudActive = false;
-        setSyncBadge("local", "本機儲存模式", "請確認 Firebase 匿名登入與 Firestore Database 已啟用");
+        setSyncBadge("local", `雲端連線失敗 (${err.code || "error"})`, "請確認 Firebase 匿名登入已開啟且已授權網域");
       }
     }
 
@@ -1008,8 +1214,9 @@
       initCloudSync();
 
       const triggerAddNew = () => {
-        const firstUnfinished = PEAKS_DB.find(p => userRecords[p.id]?.status !== "已完登") || PEAKS_DB[0];
-        openRecordModal(firstUnfinished.id, true);
+        const doneSet = new Set(tripRecords.filter(r => r.status === "已完登").map(r => r.peakId));
+        const firstUnfinished = PEAKS_DB.find(p => !doneSet.has(p.id)) || PEAKS_DB[0];
+        openRecordModal({ peakId: firstUnfinished.id, recordId: "" });
       };
 
       document.getElementById("btnOpenAdd").addEventListener("click", triggerAddNew);
@@ -1036,13 +1243,20 @@
       document.getElementById("tabBtnList").addEventListener("click", () => switchMainTab("list"));
       document.getElementById("tabBtnStats").addEventListener("click", () => switchMainTab("stats"));
 
-      const handleRowClick = (e) => {
+      const handleTableClick = (e) => {
         let el = e.target;
         while (el && el !== e.currentTarget) {
-          if (el.hasAttribute("data-peak-id")) {
-            const pid = Number(el.getAttribute("data-peak-id"));
+          if (el.hasAttribute("data-record-id")) {
+            const rid = el.getAttribute("data-record-id");
+            if (rid) {
+              openRecordModal({ recordId: rid });
+              return;
+            }
+          }
+          if (el.hasAttribute("data-add-peak-id")) {
+            const pid = Number(el.getAttribute("data-add-peak-id"));
             if (!Number.isNaN(pid)) {
-              openRecordModal(pid, false);
+              openRecordModal({ peakId: pid, recordId: "" });
               return;
             }
           }
@@ -1050,11 +1264,12 @@
         }
       };
 
-      document.getElementById("tableBody").addEventListener("click", handleRowClick);
-      document.getElementById("tripListBody").addEventListener("click", handleRowClick);
+      document.getElementById("tableBody").addEventListener("click", handleTableClick);
+      document.getElementById("tripListBody").addEventListener("click", handleTableClick);
 
+      // 切換下拉選單山岳時僅更新山岳基本資料，保留使用者正在填寫的日期、時間與參加者欄位
       document.getElementById("mPeakSelect").addEventListener("change", (e) => {
-        openRecordModal(Number(e.target.value), true);
+        applyPeakHeaderInfo(Number(e.target.value));
       });
 
       document.getElementById("mStart").addEventListener("change", refreshModalCalculatedFields);
@@ -1068,8 +1283,11 @@
       });
 
       document.getElementById("btnSaveRecord").addEventListener("click", async () => {
+        const rid = (document.getElementById("mRecordId").value || "").trim();
         const pid = Number(document.getElementById("mPeakId").value);
         const recPayload = {
+          recordId: rid,
+          peakId: pid,
           status: document.getElementById("mStatus").value === "已完登" ? "已完登" : "未完成",
           date: document.getElementById("mDate").value || "",
           startTime: document.getElementById("mStart").value || "",
@@ -1078,37 +1296,33 @@
           transport: (document.getElementById("mTransport").value || "").trim(),
           memo: (document.getElementById("mMemo").value || "").trim()
         };
-        await persistPeakRecord(pid, recPayload);
+        await persistTripRecord(recPayload);
         closeRecordModal();
       });
 
       document.getElementById("btnClearRecord").addEventListener("click", async () => {
-        const pid = Number(document.getElementById("mPeakId").value);
-        await persistPeakRecord(pid, {
-          status: "未完成",
-          date: "",
-          startTime: "",
-          endTime: "",
-          participants: "",
-          transport: "",
-          memo: ""
-        });
+        const rid = (document.getElementById("mRecordId").value || "").trim();
+        if (rid) {
+          await deleteTripRecordById(rid);
+        }
         closeRecordModal();
       });
 
       document.getElementById("btnExportCsv").addEventListener("click", () => {
         const headers = [
-          "編號", "小百岳名稱", "海拔(m)", "行政縣市", "區域", "難度等級",
+          "紀錄編號", "山岳編號", "小百岳名稱", "海拔(m)", "行政縣市", "區域", "難度等級",
           "預估來回耗時", "常用起登點", "完登狀態", "攀登日期",
           "起始時間", "結束時間", "實際總耗時(時)", "參加者名單", "參加人數", "車輛接駁", "團務備註"
         ];
         const csvRows = [headers];
 
-        for (const peak of PEAKS_DB) {
-          const rec = userRecords[peak.id] || {};
+        for (const rec of tripRecords) {
+          const peak = PEAKS_DB.find(p => p.id === rec.peakId);
+          if (!peak) continue;
           const dur = calcDurationHours(rec.startTime, rec.endTime);
           const hc = countParticipants(rec.participants);
           csvRows.push([
+            rec.recordId,
             peak.code,
             peak.name,
             peak.elev,
@@ -1137,16 +1351,16 @@
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
         link.href = url;
-        link.download = `台灣小百岳100座紀錄表_${new Date().toISOString().slice(0, 10)}.csv`;
+        link.download = `台灣小百岳出團紀錄表_${new Date().toISOString().slice(0, 10)}.csv`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
-        showToast("📄 已匯出 CSV 紀錄表");
+        showToast("📄 已匯出 CSV 出團紀錄表");
       });
 
       document.getElementById("btnExportJson").addEventListener("click", () => {
-        const blob = new Blob([JSON.stringify(userRecords, null, 2)], { type: "application/json" });
+        const blob = new Blob([JSON.stringify(tripRecords, null, 2)], { type: "application/json" });
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
         link.href = url;
@@ -1164,35 +1378,31 @@
         const reader = new FileReader();
         reader.onload = async (ev) => {
           try {
-            const parsed = JSON.parse(String(ev.target.result || "{}"));
-            if (!parsed || typeof parsed !== "object") {
-              showToast("❌ JSON 檔案內容無效");
+            const parsed = JSON.parse(String(ev.target.result || "[]"));
+            const importedList = migrateAnyRecordsPayload(parsed);
+            if (!importedList.length) {
+              showToast("❌ JSON 檔案沒有有效的紀錄內容");
               return;
             }
-            userRecords = parsed;
+            // 以 recordId 合併匯入，不覆蓋既有的不同筆紀錄
+            const mapById = new Map(tripRecords.map(r => [r.recordId, r]));
+            for (const item of importedList) {
+              mapById.set(item.recordId, item);
+            }
+            tripRecords = sortTripRecords(Array.from(mapById.values()));
             saveLocalRecords();
             renderListView();
+
             if (isCloudActive && db && currentUser) {
-              for (const [k, v] of Object.entries(userRecords)) {
-                const pid = Number(k);
-                if (!Number.isNaN(pid) && hasMeaningfulRecord(v)) {
-                  await setDoc(doc(db, "artifacts", appId, "public", "data", activeCollectionName, String(pid)), {
-                    peakId: pid,
-                    status: v.status === "已完登" ? "已完登" : "未完成",
-                    date: v.date || "",
-                    startTime: v.startTime || "",
-                    endTime: v.endTime || "",
-                    participants: v.participants || "",
-                    transport: v.transport || "",
-                    memo: v.memo || "",
-                    updatedAt: new Date().toISOString(),
-                    updatedBy: currentUser.uid
-                  });
-                }
+              for (const item of importedList) {
+                await setDoc(doc(db, "artifacts", appId, "public", "data", activeCollectionName, item.recordId), {
+                  ...item,
+                  updatedBy: currentUser.uid
+                });
               }
-              showToast("☁️ 已還原 JSON 並同步至雲端");
+              showToast(`☁️ 已還原 ${importedList.length} 筆紀錄並同步至雲端`);
             } else {
-              showToast("📂 已還原 JSON 備份紀錄");
+              showToast(`📂 已還原 ${importedList.length} 筆紀錄至本機`);
             }
           } catch (err) {
             showToast("❌ 無法解析 JSON 備份檔");
