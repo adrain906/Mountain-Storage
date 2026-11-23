@@ -336,6 +336,28 @@
               class="w-full px-3 py-2 text-sm bg-zinc-50 border border-zinc-200 rounded-xl focus:bg-white focus:outline-none focus:border-[#1b4332]" />
           </div>
         </div>
+
+        <!-- 同山岳重複新增卡控確認區（不使用 alert/confirm，內嵌安全卡控） -->
+        <div id="duplicatePeakGuard" class="hidden rounded-xl border border-amber-300 bg-amber-50 p-3.5 space-y-2.5">
+          <div class="flex items-start gap-2">
+            <span class="text-base leading-none">⚠️</span>
+            <div class="text-xs text-amber-900 space-y-1">
+              <p class="font-bold">偵測到「<span id="dupPeakName"></span>」已有 <span id="dupPeakCount">0</span> 筆紀錄！</p>
+              <p id="dupPeakSummary" class="text-amber-800"></p>
+              <p class="text-amber-700">為避免誤覆蓋舊資料，請選擇您要執行的動作：</p>
+            </div>
+          </div>
+          <div class="flex flex-wrap gap-2 justify-end pt-1">
+            <button type="button" id="btnDupSwitchEdit"
+              class="px-3 py-1.5 rounded-lg bg-white border border-amber-300 text-amber-900 hover:bg-amber-100 text-xs font-semibold cursor-pointer">
+              改為編輯既有紀錄
+            </button>
+            <button type="button" id="btnDupConfirmNew"
+              class="px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold cursor-pointer">
+              確認新增為獨立新紀錄（保留舊筆）
+            </button>
+          </div>
+        </div>
       </div>
 
       <div class="px-5 py-3.5 border-t border-zinc-200 bg-zinc-50 flex items-center justify-between">
@@ -359,8 +381,18 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-    import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-    import { getFirestore, doc, setDoc, deleteDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    import { getAuth, signInAnonymously, onAuthStateChanged, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import {
+      initializeFirestore,
+      persistentLocalCache,
+      persistentMultipleTabManager,
+      doc,
+      setDoc,
+      deleteDoc,
+      onSnapshot,
+      getDocsFromServer,
+      collection
+    } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
     // 已寫入您的 Firebase 專案設定（taiwan-peaks-log），山友開啟即自動即時同步
     const CUSTOM_FIREBASE_CONFIG = {
@@ -488,9 +520,11 @@
     let hasReceivedFirstCloudSnapshot = false;
     let unsubscribeSnapshot = null;
     let memoryFallbackTrips = [];
+    let pendingDuplicateSave = false;
 
     const appId = "tw-100-peaks-github";
     const activeCollectionName = "taiwan_100_small_peaks_trips_v3";
+    const legacyCollectionName = "taiwan_100_small_peaks_shared";
 
     function generateRecordId() {
       return `rec_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
@@ -998,6 +1032,9 @@
     // 開啟視窗：若傳入 recordId 則編輯該筆獨立紀錄；若未傳入則建立全新獨立紀錄（絕不覆蓋舊資料）
     function openRecordModal({ peakId = 1, recordId = "" } = {}) {
       buildPeakDropdownOptions();
+      pendingDuplicateSave = false;
+      document.getElementById("duplicatePeakGuard").classList.add("hidden");
+
       const isEditExisting = Boolean(recordId);
       const existing = isEditExisting ? tripRecords.find(r => r.recordId === recordId) : null;
       const targetPeakId = existing ? existing.peakId : (Number(peakId) || 1);
@@ -1033,9 +1070,16 @@
     }
 
     function closeRecordModal() {
+      pendingDuplicateSave = false;
+      document.getElementById("duplicatePeakGuard").classList.add("hidden");
       const modal = document.getElementById("recordModal");
       modal.classList.add("hidden");
       modal.classList.remove("flex");
+    }
+
+    function hideDuplicateGuard() {
+      pendingDuplicateSave = false;
+      document.getElementById("duplicatePeakGuard").classList.add("hidden");
     }
 
     function refreshModalCalculatedFields() {
@@ -1087,6 +1131,7 @@
             ...finalRecord,
             updatedBy: currentUser.uid
           });
+          setSyncBadge("cloud", "雲端即時同步中", `已同步至雲端 • 共 ${tripRecords.length} 筆即時紀錄`);
           showToast(isNew ? "☁️ 已新增獨立紀錄並即時同步至雲端" : "☁️ 已更新紀錄並即時同步至雲端");
           return;
         } catch (err) {
@@ -1097,7 +1142,7 @@
         }
       }
 
-      showToast("💾 已存至本機（尚未連上雲端，請確認 Firebase 設定）");
+      showToast("💾 已存至本機（正在背景連線雲端或受權限阻擋）");
     }
 
     async function deleteTripRecordById(recordId) {
@@ -1122,6 +1167,73 @@
       showToast("🗑️ 已從本機刪除此筆紀錄");
     }
 
+    function applyCloudSnapshotDocs(snap, userUid) {
+      const cloudList = [];
+      snap.forEach(d => {
+        const norm = normalizeRecordItem(d.data(), d.id);
+        if (norm && hasMeaningfulRecord(norm)) {
+          cloudList.push(norm);
+        }
+      });
+
+      // 合併尚未同步到雲端的本機新增紀錄，防止重新整理或離線後資料遺失
+      const cloudIdSet = new Set(cloudList.map(r => r.recordId));
+      const localOnlyRecords = tripRecords.filter(r => !cloudIdSet.has(r.recordId));
+
+      if (!hasReceivedFirstCloudSnapshot && localOnlyRecords.length > 0 && userUid) {
+        hasReceivedFirstCloudSnapshot = true;
+        const merged = sortTripRecords([...cloudList, ...localOnlyRecords]);
+        tripRecords = merged;
+        saveLocalRecords();
+        renderListView();
+        setSyncBadge("cloud", "雲端即時同步中", `已連線雲端 • 共 ${tripRecords.length} 筆即時紀錄`);
+        Promise.all(
+          localOnlyRecords.map(rec =>
+            setDoc(doc(db, "artifacts", appId, "public", "data", activeCollectionName, rec.recordId), {
+              ...rec,
+              updatedBy: userUid
+            })
+          )
+        ).catch(err => console.warn("補同步本機紀錄失敗:", err));
+        return;
+      }
+
+      hasReceivedFirstCloudSnapshot = true;
+      tripRecords = sortTripRecords(cloudList);
+      saveLocalRecords();
+      renderListView();
+      setSyncBadge("cloud", "雲端即時同步中", `已連線雲端 • 共 ${tripRecords.length} 筆即時紀錄`);
+    }
+
+    async function migrateLegacyCloudCollectionIfEmpty(userUid) {
+      try {
+        const legacyColRef = collection(db, "artifacts", appId, "public", "data", legacyCollectionName);
+        const legacySnap = await getDocsFromServer(legacyColRef);
+        if (legacySnap.empty) return;
+        const migrated = [];
+        legacySnap.forEach(d => {
+          const data = d.data();
+          const norm = normalizeRecordItem(
+            { ...data, peakId: data.peakId ?? Number(d.id), recordId: data.recordId || `legacy_peak_${d.id}` },
+            `legacy_peak_${d.id}`
+          );
+          if (norm && hasMeaningfulRecord(norm)) migrated.push(norm);
+        });
+        if (migrated.length > 0) {
+          await Promise.all(
+            migrated.map(rec =>
+              setDoc(doc(db, "artifacts", appId, "public", "data", activeCollectionName, rec.recordId), {
+                ...rec,
+                updatedBy: userUid
+              })
+            )
+          );
+        }
+      } catch (e) {
+        // 舊集合無資料或無權限時靜默略過
+      }
+    }
+
     async function initCloudSync() {
       if (typeof unsubscribeSnapshot === "function") {
         unsubscribeSnapshot();
@@ -1131,54 +1243,48 @@
       try {
         const cloudApp = initializeApp(CUSTOM_FIREBASE_CONFIG, `peaksApp_${activeCollectionName}`);
         auth = getAuth(cloudApp);
-        db = getFirestore(cloudApp);
+        // 啟用多頁籤持久快取，重新整理時毫秒級載入快取並立即向伺服器校驗最新資料
+        db = initializeFirestore(cloudApp, {
+          localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
+        });
 
         setSyncBadge("local", "正在連線雲端資料庫...", "正在與 Firebase 建立即時同步通道");
 
-        onAuthStateChanged(auth, (user) => {
+        // 確保匿名登入狀態持久化，重新整理免重新註冊新 UID，大幅加快連線速度
+        setPersistence(auth, browserLocalPersistence).catch(() => {});
+
+        onAuthStateChanged(auth, async (user) => {
           if (!user) return;
           currentUser = user;
           isCloudActive = true;
 
           if (unsubscribeSnapshot) return;
           const colRef = collection(db, "artifacts", appId, "public", "data", activeCollectionName);
-          unsubscribeSnapshot = onSnapshot(colRef, { includeMetadataChanges: false }, (snap) => {
-            const cloudList = [];
-            snap.forEach(d => {
-              const norm = normalizeRecordItem(d.data(), d.id);
-              if (norm && hasMeaningfulRecord(norm)) {
-                cloudList.push(norm);
-              }
-            });
 
-            // 若雲端初次連線為空但本機已有先前新增的紀錄，自動把本機紀錄補上傳至雲端，避免重新整理資料消失
-            if (!hasReceivedFirstCloudSnapshot && cloudList.length === 0 && tripRecords.length > 0) {
-              hasReceivedFirstCloudSnapshot = true;
-              setSyncBadge("cloud", "雲端即時同步中", "所有夥伴開啟連結即可即時查詢與共同編輯");
-              Promise.all(
-                tripRecords.map(rec =>
-                  setDoc(doc(db, "artifacts", appId, "public", "data", activeCollectionName, rec.recordId), {
-                    ...rec,
-                    updatedBy: user.uid
-                  })
-                )
-              ).catch(err => console.warn("補同步本機紀錄失敗:", err));
-              return;
+          // 立即建立即時監聽（含快取與伺服器端即時推送，跨手機/電腦即時同步）
+          unsubscribeSnapshot = onSnapshot(colRef, { includeMetadataChanges: true }, (snap) => {
+            if (snap.empty && !snap.metadata.fromCache && !hasReceivedFirstCloudSnapshot) {
+              migrateLegacyCloudCollectionIfEmpty(user.uid);
             }
-
-            hasReceivedFirstCloudSnapshot = true;
-            tripRecords = sortTripRecords(cloudList);
-            saveLocalRecords();
-            renderListView();
-            setSyncBadge("cloud", "雲端即時同步中", `已連線雲端 • 共 ${tripRecords.length} 筆即時紀錄`);
+            applyCloudSnapshotDocs(snap, user.uid);
           }, (err) => {
             console.error("雲端即時監聽失敗:", err);
             isCloudActive = false;
             setSyncBadge("local", `雲端讀取受阻 (${err.code || "error"})`, "請至 Firebase Firestore「規則」開放已登入使用者讀寫");
           });
+
+          // 頁面重新整理時主動向伺服器拉取一次最新快照，確保拿到最正確的雲端資料
+          try {
+            const serverSnap = await getDocsFromServer(colRef);
+            applyCloudSnapshotDocs(serverSnap, user.uid);
+          } catch (serverErr) {
+            console.warn("伺服器即時校驗稍後由監聽接手:", serverErr.code || serverErr.message);
+          }
         });
 
-        await signInAnonymously(auth);
+        if (!auth.currentUser) {
+          await signInAnonymously(auth);
+        }
       } catch (err) {
         console.error("Firebase 驗證或初始化失敗:", err);
         isCloudActive = false;
@@ -1244,31 +1350,25 @@
       document.getElementById("tabBtnStats").addEventListener("click", () => switchMainTab("stats"));
 
       const handleTableClick = (e) => {
-        let el = e.target;
-        while (el && el !== e.currentTarget) {
-          if (el.hasAttribute("data-record-id")) {
-            const rid = el.getAttribute("data-record-id");
-            if (rid) {
-              openRecordModal({ recordId: rid });
-              return;
-            }
-          }
-          if (el.hasAttribute("data-add-peak-id")) {
-            const pid = Number(el.getAttribute("data-add-peak-id"));
-            if (!Number.isNaN(pid)) {
-              openRecordModal({ peakId: pid, recordId: "" });
-              return;
-            }
-          }
-          el = el.parentElement;
+        const recordEl = e.target.closest("[data-record-id]");
+        if (recordEl) {
+          const rid = recordEl.getAttribute("data-record-id");
+          if (rid) openRecordModal({ recordId: rid });
+          return;
+        }
+        const addPeakEl = e.target.closest("[data-add-peak-id]");
+        if (addPeakEl) {
+          const pid = Number(addPeakEl.getAttribute("data-add-peak-id"));
+          if (pid) openRecordModal({ peakId: pid, recordId: "" });
         }
       };
 
       document.getElementById("tableBody").addEventListener("click", handleTableClick);
       document.getElementById("tripListBody").addEventListener("click", handleTableClick);
 
-      // 切換下拉選單山岳時僅更新山岳基本資料，保留使用者正在填寫的日期、時間與參加者欄位
+      // 切換下拉選單山岳時僅更新山岳基本資料，並重設重複卡控狀態
       document.getElementById("mPeakSelect").addEventListener("change", (e) => {
+        hideDuplicateGuard();
         applyPeakHeaderInfo(Number(e.target.value));
       });
 
@@ -1282,30 +1382,65 @@
         if (e.target === e.currentTarget) closeRecordModal();
       });
 
-      document.getElementById("btnSaveRecord").addEventListener("click", async () => {
-        const rid = (document.getElementById("mRecordId").value || "").trim();
-        const pid = Number(document.getElementById("mPeakId").value);
-        const recPayload = {
-          recordId: rid,
-          peakId: pid,
-          status: document.getElementById("mStatus").value === "已完登" ? "已完登" : "未完成",
-          date: document.getElementById("mDate").value || "",
-          startTime: document.getElementById("mStart").value || "",
-          endTime: document.getElementById("mEnd").value || "",
-          participants: (document.getElementById("mParticipants").value || "").trim(),
-          transport: (document.getElementById("mTransport").value || "").trim(),
-          memo: (document.getElementById("mMemo").value || "").trim()
-        };
-        await persistTripRecord(recPayload);
-        closeRecordModal();
+      const collectModalPayload = () => ({
+        recordId: (document.getElementById("mRecordId").value || "").trim(),
+        peakId: Number(document.getElementById("mPeakId").value),
+        status: document.getElementById("mStatus").value === "已完登" ? "已完登" : "未完成",
+        date: document.getElementById("mDate").value || "",
+        startTime: document.getElementById("mStart").value || "",
+        endTime: document.getElementById("mEnd").value || "",
+        participants: (document.getElementById("mParticipants").value || "").trim(),
+        transport: (document.getElementById("mTransport").value || "").trim(),
+        memo: (document.getElementById("mMemo").value || "").trim()
       });
 
-      document.getElementById("btnClearRecord").addEventListener("click", async () => {
-        const rid = (document.getElementById("mRecordId").value || "").trim();
-        if (rid) {
-          await deleteTripRecordById(rid);
+      // 卡控按鈕 1：使用者選擇「改為編輯既有紀錄」
+      document.getElementById("btnDupSwitchEdit").addEventListener("click", () => {
+        const pid = Number(document.getElementById("mPeakId").value);
+        const existingList = tripRecords.filter(r => r.peakId === pid);
+        if (existingList.length > 0) {
+          openRecordModal({ recordId: existingList[0].recordId });
+          showToast("已切換為編輯該山岳的既有紀錄");
         }
+      });
+
+      // 卡控按鈕 2：使用者明確確認「新增為獨立新紀錄（保留舊筆）」
+      document.getElementById("btnDupConfirmNew").addEventListener("click", () => {
+        const recPayload = collectModalPayload();
+        recPayload.recordId = "";
         closeRecordModal();
+        persistTripRecord(recPayload);
+      });
+
+      document.getElementById("btnSaveRecord").addEventListener("click", () => {
+        const recPayload = collectModalPayload();
+        const isNew = !recPayload.recordId;
+
+        // 1) 新增同一座山時跳出明確卡控，絕不悄悄覆蓋舊紀錄
+        if (isNew && !pendingDuplicateSave) {
+          const samePeakRecords = tripRecords.filter(r => r.peakId === recPayload.peakId);
+          if (samePeakRecords.length > 0) {
+            const peak = PEAKS_DB.find(p => p.id === recPayload.peakId);
+            const latest = samePeakRecords[0];
+            document.getElementById("dupPeakName").textContent = peak ? `${peak.code} ${peak.name}` : `#${recPayload.peakId}`;
+            document.getElementById("dupPeakCount").textContent = String(samePeakRecords.length);
+            document.getElementById("dupPeakSummary").textContent = `最近一筆：${latest.date || "未設日期"}（${latest.status}）${latest.participants ? `・參加者：${latest.participants}` : ""}`;
+            document.getElementById("duplicatePeakGuard").classList.remove("hidden");
+            pendingDuplicateSave = true;
+            return;
+          }
+        }
+
+        closeRecordModal();
+        persistTripRecord(recPayload);
+      });
+
+      document.getElementById("btnClearRecord").addEventListener("click", () => {
+        const rid = (document.getElementById("mRecordId").value || "").trim();
+        closeRecordModal();
+        if (rid) {
+          deleteTripRecordById(rid);
+        }
       });
 
       document.getElementById("btnExportCsv").addEventListener("click", () => {
